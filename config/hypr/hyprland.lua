@@ -87,9 +87,11 @@ hl.animation({ leaf = "windowsOut", enabled = true, speed = 7, bezier = "default
 hl.animation({ leaf = "border", enabled = true, speed = 10, bezier = "default" })
 hl.animation({ leaf = "borderangle", enabled = true, speed = 8, bezier = "default" })
 hl.animation({ leaf = "fade", enabled = true, speed = 7, bezier = "default" })
-hl.animation({ leaf = "layersIn", enabled = true, speed = 7, bezier = "default", style = "slide left" })
-hl.animation({ leaf = "layersOut", enabled = true, speed = 7, bezier = "default", style = "slide left" })
 hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "default" })
+
+-- per-layer animation: only the swaync control center slides in from the left;
+-- every other layer keeps the global (fade) animation.
+hl.layer_rule({ match = { namespace = "swaync-control-center" }, animation = "slide left" })
 
 
 hl.config({
