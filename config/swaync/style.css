@@ -1,0 +1,324 @@
+/* SwayNC — flat mako-like style: translucent black + cyan border */
+
+@import 'colors.css';
+
+/* Smaller icons + no extra per-item frame */
+:root {
+    --notification-icon-size: 20px;
+    --notification-app-icon-size: 14px;
+
+    /* ---- size knobs: tweak these to scale swaync ---- */
+    --font-ui: 16px;            /* global default text */
+    --font-summary: 17px;       /* notification title */
+    --font-body: 15px;          /* notification body */
+    --font-time: 13px;          /* timestamp */
+    --font-widget-title: 18px;  /* widget headings ("Notifications", DND, ...) */
+    --font-widget-label: 16px;  /* button grid / volume / backlight labels */
+}
+
+* {
+    font-family: "Maple Mono", "Noto Sans CJK SC", "Fira Sans", sans-serif;
+    font-size: var(--font-ui);
+}
+
+/* ---------------- Selection / focus highlight (item interaction) ---------------- */
+.notification-row:focus,
+.notification-group:focus {
+    background: @background;
+    border: 3px solid @primary;
+    border-radius: 12px;
+}
+
+/* ---------------- Floating notifications ---------------- */
+.floating-notifications.background .notification-row .notification-background {
+    padding: 6px 4px 2px 4px;
+    background: transparent;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification {
+    background-color: #000000;
+    opacity: 1;
+    border: none;
+    border-radius: 10px;
+    box-shadow: none;
+    margin: 3px 0;
+    padding: 2px;
+    color: @on_surface;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification.critical {
+    border: 3px solid @error;
+}
+
+.summary {
+    color: @on_surface;
+    font-weight: 700;
+    font-size: var(--font-summary);
+    padding: 6px 12px 2px 12px;
+}
+
+.body {
+    color: @on_surface_variant;
+    font-size: var(--font-body);
+    padding: 0 12px 6px 12px;
+}
+
+.time {
+    color: @outline;
+    font-size: var(--font-time);
+    margin: 8px 12px;
+}
+
+.floating-notifications.background .notification-row .notification-background .close-button {
+    background: transparent;
+    color: @on_surface_variant;
+    border-radius: 8px;
+    margin: 4px;
+    padding: 2px;
+}
+
+.floating-notifications.background .notification-row .notification-background .close-button:hover {
+    background-color: @primary;
+    color: @on_primary;
+}
+
+.notification-action {
+    background-color: @surface_container;
+    color: @on_surface;
+    border: 1px solid @outline_variant;
+    border-radius: 8px;
+    margin: 4px;
+    padding: 4px 10px;
+}
+
+.notification-action:hover {
+    background-color: @primary;
+    color: @on_primary;
+    border-color: @primary;
+}
+
+.notification progressbar trough {
+    background: @surface_container_high;
+    border-radius: 10px;
+}
+
+.notification progressbar progress {
+    background: @primary;
+    border-radius: 10px;
+}
+
+/* ---------------- Control center ---------------- */
+.control-center {
+    background-color: rgba(0, 0, 0, 0.75);
+    border: none;
+    border-radius: 14px;
+    box-shadow: none;
+    margin: 0;
+    padding: 20px;
+    color: @on_surface;
+}
+
+.control-center .widget {
+    margin: 1px;
+    padding: 12px 0px;
+}
+
+.control-center .widget-title,
+.widget-title {
+    color: @on_surface;
+    font-size: var(--font-widget-title);
+    font-weight: 700;
+    margin: 2px 4px;
+}
+
+.widget-title button {
+    background: @surface_container;
+    color: @on_surface;
+    border-radius: 8px;
+    padding: 2px 10px;
+}
+
+.widget-title button:hover {
+    background: @primary;
+    color: @on_primary;
+}
+
+/* buttons grid */
+.widget-buttons-grid {
+    margin: 6px;
+}
+
+.widget-buttons-grid button {
+    background: @surface_container;
+    color: @on_surface;
+    border: 1px solid @outline_variant;
+    border-radius: 8px;
+    margin: 3px;
+    padding: 6px;
+    min-width: 2.4em;
+    min-height: 2.4em;
+}
+
+.widget-buttons-grid button:hover {
+    background: @primary_container;
+    border-color: @primary;
+}
+
+.widget-buttons-grid button.toggle:checked {
+    background: @primary;
+    color: @on_primary;
+}
+
+.widget-buttons-grid label {
+    font-size: var(--font-widget-label);
+}
+
+/* volume / backlight */
+.widget-volume,
+.widget-backlight {
+    background: @surface_container;
+    border-radius: 10px;
+    margin: 6px 12px;
+    padding: 10px 14px;
+}
+
+.widget-volume trough,
+.widget-backlight trough {
+    background: @surface_container_high;
+    border-radius: 10px;
+    margin: 6px 0;
+}
+
+.widget-volume trough highlight,
+.widget-backlight trough highlight {
+    background: @primary;
+    border-radius: 10px;
+}
+
+.widget-volume label,
+.widget-backlight label {
+    font-size: var(--font-widget-label);
+}
+
+/* do not disturb */
+.widget-dnd {
+    margin: 8px 12px;
+}
+
+.widget-dnd > switch {
+    background: @surface_container_high;
+    border-radius: 8px;
+}
+
+.widget-dnd > switch:checked {
+    background: @primary;
+}
+
+.widget-dnd > switch slider {
+    background: @on_surface;
+    border-radius: 6px;
+}
+
+/* mpris */
+.widget-mpris {
+    margin: 6px 12px;
+}
+
+.widget-mpris-player {
+    background: @surface_container;
+    border-radius: 10px;
+}
+
+.widget-mpris-title {
+    color: @on_surface;
+    font-weight: 700;
+}
+
+.widget-mpris-subtitle {
+    color: @on_surface_variant;
+}
+
+/* notifications listed inside the control center */
+.control-center .notification-row .notification-background {
+    padding: 1px 2px;
+    background: transparent;
+}
+
+.control-center .control-center-list {
+    margin: 0;
+    padding: 0;
+}
+
+.control-center .notification-row .notification-background .notification {
+    background-color: #000000;
+    opacity: 1;
+    border: none;
+    border-radius: 10px;
+    box-shadow: none;
+    margin: 1px 0;
+    padding: 2px;
+    color: @on_surface;
+}
+
+.control-center .control-center-list .notification {
+    box-shadow: none;
+}
+
+.control-center .notification-row .notification-background .notification .notification-default-action {
+    background: transparent;
+    border: none;
+    padding: 2px;
+}
+
+.control-center .notification-row .notification-background .notification.critical {
+    border: 3px solid @error;
+}
+
+.control-center .notification-row .notification-background .close-button {
+    background-color: @surface_container_high;
+    color: @on_surface;
+    border-radius: 8px;
+    padding: 3px;
+}
+
+/* notification groups — keep collapsed groups fully visible (swaync fades them to 0.4) */
+.notification-group,
+.notification-group.collapsed,
+.notification-group.collapsed.not-expanded {
+    opacity: 1;
+    margin: 4px 10px;
+    box-shadow: none;
+}
+
+/* hide the group header app icon (keep the app name text) */
+.notification-group .notification-group-headers .notification-group-icon,
+.notification-group .notification-group-headers image {
+    opacity: 0;
+    -gtk-icon-size: 1px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+}
+
+/* Notifications routed through kitty (OSC 99) carry kitty's own logo as the
+   fallback app icon. Hide the header image + app icon; body images
+   (.body-image) are left alone. */
+.floating-notifications .notification-content .image,
+.floating-notifications .notification-content .app-icon,
+.control-center .notification-content .image,
+.control-center .notification-content .app-icon {
+    opacity: 0;
+    -gtk-icon-size: 0;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.notification-group-collapse-button,
+.notification-group-close-all-button {
+    background: @surface_container;
+    border-radius: 8px;
+    padding: 4px;
+}

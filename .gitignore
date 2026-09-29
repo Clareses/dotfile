@@ -8,6 +8,9 @@ home/pi/agent/git/
 home/pi/agent/monitor/
 config/fish/fish_variables
 config/fish/conf.d/secrets.fish
+config/fcitx5/crash.log
+config/fcitx5/conf/cached_layouts
+config/fcitx5/conf/*_*
 config/tmux/plugins/
 config/nvim/.metals/
 config/nvim/.scala-build/

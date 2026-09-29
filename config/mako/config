@@ -1,0 +1,41 @@
+# mako — styled to match ~/.config/hypr/hyprland.conf
+#   decoration.rounding      = 10        -> border-radius
+#   general.col.active_border = 33ccff/00ff99 45deg -> border-color (mako has no gradient)
+#   decoration.blur enabled             -> semi-transparent bg + Hyprland layerrule (see hyprland.conf)
+#   kitty background #101010 @ 0.8      -> background-color
+#
+# Reload after editing:  makoctl reload
+
+font=Maple Mono 14
+format=<b>%s</b>\n%b
+text-alignment=left
+markup=1
+
+background-color=#101010cc
+text-color=#d9d7ce
+border-color=#33ccff
+progress-color=over #00ff99
+
+border-size=3
+border-radius=10
+padding=14
+margin=12
+anchor=top-right
+
+default-timeout=6000
+max-visible=5
+layer=overlay
+icons=1
+max-icon-size=48
+icon-border-radius=6
+
+on-button-left=dismiss
+on-button-middle=dismiss-all
+
+# pi sends OSC 99 with urgency=critical -> keep it on screen until dismissed
+[urgency=critical]
+default-timeout=0
+
+# pi 的通知不要 kitty 的 logo
+[app-name=pi]
+icons=0
