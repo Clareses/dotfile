@@ -87,6 +87,8 @@ hl.animation({ leaf = "windowsOut", enabled = true, speed = 7, bezier = "default
 hl.animation({ leaf = "border", enabled = true, speed = 10, bezier = "default" })
 hl.animation({ leaf = "borderangle", enabled = true, speed = 8, bezier = "default" })
 hl.animation({ leaf = "fade", enabled = true, speed = 7, bezier = "default" })
+hl.animation({ leaf = "layersIn", enabled = true, speed = 7, bezier = "default", style = "slide left" })
+hl.animation({ leaf = "layersOut", enabled = true, speed = 7, bezier = "default", style = "slide left" })
 hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "default" })
 
 
@@ -177,6 +179,9 @@ bind(mainMod .. "c", exec("swaync-client -t -sw"), { description = "Toggle notif
 
 -- ML4W sidebar (quickshell)
 bind(mainMod .. "b", exec("qs ipc call sidebar toggle"), { description = "Toggle ML4W sidebar" })
+
+-- Todo list + sticky notes popup (quickshell)
+bind(mainMod .. "t", exec("qs ipc call todo toggle"), { description = "Toggle todo & sticky notes" })
 bind(mainMod .. "u", function()
     local monitors = hl.get_monitors()
     local cmd = ""

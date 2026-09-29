@@ -19,7 +19,7 @@
     "yun/gpt-6-astra": "high",
     "yun/gpt-6-sol": "high"
   },
-  "hideThinkingBlock": false,
+  "hideThinkingBlock": true,
   "treeFilterMode": "no-tools",
   "doubleEscapeAction": "none",
   "tuiMode": "regular",

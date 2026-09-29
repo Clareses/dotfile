@@ -9,6 +9,7 @@ import "CalendarApp"
 import "WallpaperApp"
 import "StatusbarApp"
 import "CustomTheme"
+import "TodoApp"
 // import "PetApp"
 
 ShellRoot {
@@ -99,6 +100,7 @@ ShellRoot {
     PowerWindow {}
     SidebarWindow {}
     CalendarWindow {}
+    TodoWindow {}
     WallpaperWindow {}
     // PetWindow {}
 
@@ -110,3 +112,4 @@ ShellRoot {
         StatusbarWindow {}
     }
 }
+
