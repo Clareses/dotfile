@@ -1,0 +1,31 @@
+#!/bin/fish
+# changebg - set a random wallpaper using awww (replaces the old swaybg version)
+#
+# The old /usr/bin/changebg used swaybg, which is a completely separate
+# wallpaper process that knows nothing about the ML4W/Quickshell wallpaper
+# stack. ML4W's Quickshell wallpaper picker (~/.config/ml4w/scripts/ml4w-wallpaper)
+# uses awww, so use the same backend here to keep both in sync.
+
+set dir $HOME/pictures/壁纸/2k
+
+# Make sure the awww daemon is running (it is also started at login).
+if not pgrep -x awww-daemon >/dev/null
+    awww-daemon &
+    for i in (seq 50)
+        if awww query >/dev/null 2>&1
+            break
+        end
+        sleep 0.1
+    end
+end
+
+set pic (find $dir -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | shuf | head -n 1)
+if test -z "$pic"
+    echo "changebg: no images found in $dir" >&2
+    exit 1
+end
+
+echo $pic
+mkdir -p ~/.cache/ml4w/hyprland-dotfiles
+echo $pic > ~/.cache/ml4w/hyprland-dotfiles/current_wallpaper
+awww img "$pic" --transition-type simple --transition-fps 60

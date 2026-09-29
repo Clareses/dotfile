@@ -1,0 +1,50 @@
+# dotfile links manifest
+# 每行: <mode> <repo 内相对路径> <目标绝对路径(~ 可用)>
+# mode:
+#   linkdir   整目录软链接
+#   linkfile  单文件软链接
+#   mirror    目标目录保持真实存在，把 repo 目录下的每个子项软链接进去，
+#             不动目标里 repo 没有的东西（如 node_modules / 浏览器 profile）
+# 空行和 # 开头会被忽略。
+
+# ---- window manager / desktop ----
+linkdir  config/hypr                 ~/.config/hypr
+linkdir  config/waybar               ~/.config/waybar
+linkdir  config/i3                   ~/.config/i3
+linkdir  config/quickshell           ~/.config/quickshell
+
+# ---- terminal ----
+linkdir  config/tmux                 ~/.config/tmux
+linkfile config/fish/config.fish     ~/.config/fish/config.fish
+linkdir  config/fish/conf.d          ~/.config/fish/conf.d
+linkdir  config/fish/functions       ~/.config/fish/functions
+linkdir  config/fish/completions     ~/.config/fish/completions
+
+# ---- nvim (逐项链接: .metals/.scala-build/.bsp 等运行时留在本地) ----
+linkfile config/nvim/init.lua        ~/.config/nvim/init.lua
+linkfile config/nvim/init            ~/.config/nvim/init
+linkfile config/nvim/basic.lua       ~/.config/nvim/basic.lua
+linkdir  config/nvim/clean           ~/.config/nvim/clean
+linkdir  config/nvim/lua             ~/.config/nvim/lua
+linkdir  config/nvim/back-package    ~/.config/nvim/back-package
+linkfile config/nvim/lazy-lock.json  ~/.config/nvim/lazy-lock.json
+linkfile config/nvim/.scalafmt.conf  ~/.config/nvim/.scalafmt.conf
+
+# ---- pi 标量配置 (绝不碰 auth.json / sessions / cache / npm / git) ----
+linkfile home/pi/agent/settings.json    ~/.pi/agent/settings.json
+linkfile home/pi/agent/keybindings.json ~/.pi/agent/keybindings.json
+linkfile home/pi/agent/models.json      ~/.pi/agent/models.json
+linkdir  home/pi/agent/prompts          ~/.pi/agent/prompts
+linkdir  home/pi/agent/skills           ~/.pi/agent/skills
+
+# ---- pi 扩展: 单文件 ----
+linkfile home/pi/agent/extensions/notify.ts            ~/.pi/agent/extensions/notify.ts
+linkfile home/pi/agent/extensions/history.ts           ~/.pi/agent/extensions/history.ts
+linkfile home/pi/agent/extensions/diff.ts              ~/.pi/agent/extensions/diff.ts
+linkfile home/pi/agent/extensions/ask-user-question.ts ~/.pi/agent/extensions/ask-user-question.ts
+linkfile home/pi/agent/extensions/web-access-toggle.ts ~/.pi/agent/extensions/web-access-toggle.ts
+
+# ---- pi 扩展: 项目源码 (mirror, 保留 node_modules / profile / .git) ----
+mirror   home/pi/agent/extensions/browser-zen             ~/.pi/agent/extensions/browser-zen
+mirror   home/pi/agent/extensions/web-fetch               ~/.pi/agent/extensions/web-fetch
+mirror   home/pi/agent/extensions/pi-interactive-subagents ~/.pi/agent/extensions/pi-interactive-subagents

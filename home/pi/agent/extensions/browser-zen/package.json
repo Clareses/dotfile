@@ -1,0 +1,10 @@
+{
+  "name": "pi-browser-zen",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "pi extension: drive your running Zen/Firefox browser over WebDriver BiDi (Puppeteer)",
+  "dependencies": {
+    "puppeteer-core": "^25.11.0"
+  }
+}

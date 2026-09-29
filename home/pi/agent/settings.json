@@ -1,0 +1,27 @@
+{
+  "lastChangelogVersion": "0.87.0",
+  "theme": "ayu-mirage",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "deepseek-v4.1-flash",
+  "packages": [
+    "npm:pi-vimmode",
+    "npm:pi-ayu-themes",
+    "https://github.com/nicobailon/pi-web-access.git"
+  ],
+  "defaultThinkingLevel": "low",
+  "modelThinkingLevels": {
+    "yun/gpt-5.4": "high",
+    "yun/gpt-5.4-mini": "high",
+    "yun/gpt-5.5": "high",
+    "yun/gpt-5.6-luna": "high",
+    "yun/gpt-5.6-sol": "high",
+    "yun/gpt-5.6-terra": "high",
+    "yun/gpt-6-astra": "high",
+    "yun/gpt-6-sol": "high"
+  },
+  "hideThinkingBlock": false,
+  "treeFilterMode": "no-tools",
+  "doubleEscapeAction": "none",
+  "tuiMode": "regular",
+  "outputPad": 1
+}

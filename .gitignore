@@ -1,0 +1,25 @@
+# ---- 密钥 / 运行时 / 机器相关，绝不提交 ----
+home/pi/agent/auth.json
+home/pi/agent/models-store.json
+home/pi/agent/sessions/
+home/pi/agent/web-search-cache/
+home/pi/agent/npm/
+home/pi/agent/git/
+home/pi/agent/monitor/
+config/fish/fish_variables
+config/fish/conf.d/secrets.fish
+config/tmux/plugins/
+config/nvim/.metals/
+config/nvim/.scala-build/
+config/nvim/.bsp/
+**/node_modules/
+**/.zen-ai-profile/
+**/*.log
+
+# ---- 由 matugen/脚本生成的配色（想版本化就删掉这几行）----
+config/hypr/colors.conf
+config/hypr/colors.lua
+config/waybar/colors.css
+
+# ---- 安装脚本自己的备份 ----
+_backup/
