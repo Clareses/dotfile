@@ -6,7 +6,8 @@
   "packages": [
     "npm:pi-vimmode",
     "npm:pi-ayu-themes",
-    "https://github.com/nicobailon/pi-web-access.git"
+    "https://github.com/nicobailon/pi-web-access.git",
+    "packages/pi-ripwire"
   ],
   "defaultThinkingLevel": "low",
   "modelThinkingLevels": {

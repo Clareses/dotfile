@@ -53,3 +53,6 @@ linkfile home/pi/agent/extensions/web-access-toggle.ts ~/.pi/agent/extensions/we
 mirror   home/pi/agent/extensions/browser-zen             ~/.pi/agent/extensions/browser-zen
 mirror   home/pi/agent/extensions/web-fetch               ~/.pi/agent/extensions/web-fetch
 mirror   home/pi/agent/extensions/pi-interactive-subagents ~/.pi/agent/extensions/pi-interactive-subagents
+
+# ---- pi package: ripwire (扩展 + 17 个 skill 打包在一起) ----
+linkdir  home/pi/agent/packages/pi-ripwire ~/.pi/agent/packages/pi-ripwire
