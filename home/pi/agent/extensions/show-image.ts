@@ -45,7 +45,7 @@ import {
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, isAbsolute, join, resolve } from "node:path";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
 const KITTEN = "kitten";
@@ -316,14 +316,27 @@ function piPaneId(): string | undefined {
 	return process.env.TMUX_PANE || undefined;
 }
 
-function panelPaths(pane: string) {
-	const base = pane.replace(/[^A-Za-z0-9_.-]/g, "_");
+/** Per-session key: pi's session id (falls back to the session file, then the pane). */
+function sessionKey(ctx?: ExtensionContext): string {
+	try {
+		const id = ctx?.sessionManager?.getSessionId?.();
+		if (id) return String(id);
+		const file = ctx?.sessionManager?.getSessionFile?.();
+		if (file) return basename(file).replace(/\.jsonl$/i, "");
+	} catch {
+		/* ignore */
+	}
+	return piPaneId() ?? "default";
+}
+
+function panelPaths(key: string) {
+	const base = key.replace(/[^A-Za-z0-9_.-]/g, "_");
 	const dir = runtimeDir();
 	return {
 		viewer: join(dir, `pi-image-viewer-${base}.py`),
 		fifo: join(dir, `pi-image-viewer-${base}.fifo`),
 		state: join(dir, `pi-image-viewer-${base}.pane`),
-		history: join(cacheDir(), "image-panel-history.txt"),
+		history: join(cacheDir(), `image-panel-${base}.history.txt`),
 	};
 }
 
@@ -384,12 +397,13 @@ function ensureFifo(path: string): boolean {
 }
 
 function createPanel(
-	pane: string,
+	targetPane: string,
+	key: string,
 	image: string | undefined,
 	size: string,
 	focus: boolean,
 ): string | undefined {
-	const { viewer, fifo, state, history } = panelPaths(pane);
+	const { viewer, fifo, state, history } = panelPaths(key);
 	writeFileSync(viewer, VIEWER_SCRIPT, { mode: 0o755 });
 	if (!ensureFifo(fifo)) return undefined;
 
@@ -399,7 +413,7 @@ function createPanel(
 
 	const initial = image ? ` ${shellQuote(image)}` : "";
 	const command = `PI_IMG_VER=${SCRIPT_VERSION} ${PYTHON} ${shellQuote(viewer)} ${shellQuote(history)} ${shellQuote(fifo)}${initial}`;
-	const args = ["split-window", "-h", "-P", "-F", "#{pane_id}", "-t", pane, "-l", size];
+	const args = ["split-window", "-h", "-P", "-F", "#{pane_id}", "-t", targetPane, "-l", size];
 	if (!focus) args.push("-d");
 	args.push(command);
 
@@ -413,10 +427,8 @@ function createPanel(
 	return newPane;
 }
 
-function focusPanel(pane: string, image?: string): boolean {
-	const { fifo } = panelPaths(pane);
-	if (image && !sendToPanel(fifo, image)) return false;
-	runTmux(["select-pane", "-t", pane]);
+function focusPanel(panel: string): boolean {
+	runTmux(["select-pane", "-t", panel]);
 	return true;
 }
 
@@ -445,8 +457,8 @@ async function sendToPanel(fifo: string, imagePath: string, timeoutMs = SEND_TIM
 	return false;
 }
 
-function closePanel(pane: string): boolean {
-	const { state, fifo, viewer } = panelPaths(pane);
+function closePanel(key: string): boolean {
+	const { state, fifo, viewer } = panelPaths(key);
 	const stored = readState(state);
 	if (stored && listPanes().includes(stored)) runTmux(["kill-pane", "-t", stored]);
 	for (const f of [state, fifo, viewer]) {
@@ -539,6 +551,7 @@ function requireEnvironment(): string {
 }
 
 async function showImage(
+	ctx: ExtensionContext,
 	imagePath: string | undefined,
 	cwd: string,
 	size: string,
@@ -546,7 +559,8 @@ async function showImage(
 	requireImage: boolean,
 ): Promise<ActionResult> {
 	const pane = requireEnvironment();
-	const { state, history } = panelPaths(pane);
+	const key = sessionKey(ctx);
+	const { state, history, fifo } = panelPaths(key);
 
 	const image = resolveImage(imagePath, cwd);
 	if (image) {
@@ -556,31 +570,31 @@ async function showImage(
 		throw new Error("No image path given and no pasted clipboard image found.");
 	}
 
-	if (panelAlive(readState(state))) {
-		const panel = readState(state) as string;
-		if (image) await sendToPanel(panelPaths(pane).fifo, image);
+	const stored = readState(state);
+	if (panelAlive(stored)) {
+		const panel = stored as string;
+		if (image) await sendToPanel(fifo, image);
 		if (focus) focusPanel(panel);
 		return {
 			text: image
 				? `Showing ${basename(image)} in image pane ${panel}.`
 				: `Focused image pane ${panel}.`,
-			details: { pane: panel, path: image ?? null },
+			details: { pane: panel, path: image ?? null, session: key },
 		};
 	}
 
-	const panel = createPanel(pane, image, size, focus);
+	const panel = createPanel(pane, key, image, size, focus);
 	if (!panel) throw new Error("Failed to create the tmux image pane.");
 	return {
 		text: image
 			? `Opened image pane ${panel} with ${basename(image)}.`
 			: `Opened image pane ${panel} (history only).`,
-		details: { pane: panel, path: image ?? null },
+		details: { pane: panel, path: image ?? null, session: key },
 	};
 }
 
-function closeImagePane(): ActionResult {
-	const pane = piPaneId();
-	if (pane) closePanel(pane);
+function closeImagePane(ctx: ExtensionContext): ActionResult {
+	closePanel(sessionKey(ctx));
 	return { text: "Closed the image pane.", details: { closed: true } };
 }
 
@@ -618,10 +632,11 @@ export default function (pi: ExtensionAPI): void {
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			if (params.close) {
-				const r = closeImagePane();
+				const r = closeImagePane(ctx);
 				return { content: [{ type: "text", text: r.text }], details: r.details };
 			}
 			const r = await showImage(
+				ctx,
 				params.path,
 				ctx.cwd,
 				params.size ?? DEFAULT_SIZE,
@@ -637,12 +652,12 @@ export default function (pi: ExtensionAPI): void {
 		handler: async (args, ctx) => {
 			const value = args.trim();
 			if (value.toLowerCase() === "close") {
-				const r = closeImagePane();
+				const r = closeImagePane(ctx);
 				ctx.ui.notify(r.text, "info");
 				return;
 			}
 			try {
-				const r = await showImage(value || undefined, ctx.cwd, DEFAULT_SIZE, true, false);
+				const r = await showImage(ctx, value || undefined, ctx.cwd, DEFAULT_SIZE, true, false);
 				ctx.ui.notify(r.text, "info");
 			} catch (error) {
 				ctx.ui.notify((error as Error).message, "error");
@@ -650,8 +665,7 @@ export default function (pi: ExtensionAPI): void {
 		},
 	});
 
-	pi.on("session_shutdown", () => {
-		const pane = piPaneId();
-		if (pane) closePanel(pane);
+	pi.on("session_shutdown", (_event, ctx) => {
+		closePanel(sessionKey(ctx));
 	});
 }
