@@ -289,6 +289,8 @@ if __name__ == "__main__":
 
 // Changes whenever the viewer source changes, so /reload rebuilds a running pane.
 const SCRIPT_VERSION = createHash("sha1").update(VIEWER_SCRIPT).digest("hex").slice(0, 10);
+// Bump when the panel wiring changes (paths, args, ...) so a running pane is rebuilt.
+const PANE_TAG = `${SCRIPT_VERSION}-v2`;
 
 // ---------------------------------------------------------------------------
 // Paths & process helpers
@@ -361,7 +363,7 @@ function listPanes(): string[] {
 function panelAlive(pane: string | undefined): boolean {
 	if (!pane || !listPanes().includes(pane)) return false;
 	const start = runTmux(["display-message", "-p", "-t", pane, "#{pane_start_command}"]).out;
-	return start.includes("pi-image-viewer-") && start.includes(`PI_IMG_VER=${SCRIPT_VERSION}`);
+	return start.includes("pi-image-viewer-") && start.includes(`PI_IMG_VER=${PANE_TAG}`);
 }
 
 function readState(file: string): string | undefined {
@@ -412,7 +414,7 @@ function createPanel(
 	if (stored && listPanes().includes(stored)) runTmux(["kill-pane", "-t", stored]);
 
 	const initial = image ? ` ${shellQuote(image)}` : "";
-	const command = `PI_IMG_VER=${SCRIPT_VERSION} ${PYTHON} ${shellQuote(viewer)} ${shellQuote(history)} ${shellQuote(fifo)}${initial}`;
+	const command = `PI_IMG_VER=${PANE_TAG} ${PYTHON} ${shellQuote(viewer)} ${shellQuote(history)} ${shellQuote(fifo)}${initial}`;
 	const args = ["split-window", "-h", "-P", "-F", "#{pane_id}", "-t", targetPane, "-l", size];
 	if (!focus) args.push("-d");
 	args.push(command);
