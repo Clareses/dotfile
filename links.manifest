@@ -49,6 +49,8 @@ linkfile home/pi/agent/extensions/history.ts           ~/.pi/agent/extensions/hi
 linkfile home/pi/agent/extensions/diff.ts              ~/.pi/agent/extensions/diff.ts
 linkfile home/pi/agent/extensions/ask-user-question.ts ~/.pi/agent/extensions/ask-user-question.ts
 linkfile home/pi/agent/extensions/web-access-toggle.ts ~/.pi/agent/extensions/web-access-toggle.ts
+linkfile home/pi/agent/extensions/image-preview.ts      ~/.pi/agent/extensions/image-preview.ts
+linkfile home/pi/agent/extensions/show-image.ts         ~/.pi/agent/extensions/show-image.ts
 
 # ---- pi 扩展: 项目源码 (mirror, 保留 node_modules / profile / .git) ----
 mirror   home/pi/agent/extensions/browser-zen             ~/.pi/agent/extensions/browser-zen
