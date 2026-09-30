@@ -39,6 +39,7 @@ linkfile config/nvim/.scalafmt.conf  ~/.config/nvim/.scalafmt.conf
 linkfile home/pi/agent/settings.json    ~/.pi/agent/settings.json
 linkfile home/pi/agent/keybindings.json ~/.pi/agent/keybindings.json
 linkfile home/pi/agent/models.json      ~/.pi/agent/models.json
+linkfile home/pi/agent/pi-input-history.json ~/.pi/agent/pi-input-history.json
 linkdir  home/pi/agent/prompts          ~/.pi/agent/prompts
 linkdir  home/pi/agent/skills           ~/.pi/agent/skills
 

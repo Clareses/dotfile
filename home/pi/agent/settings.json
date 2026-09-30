@@ -6,8 +6,21 @@
   "packages": [
     "npm:pi-vimmode",
     "npm:pi-ayu-themes",
-    "https://github.com/nicobailon/pi-web-access.git",
-    "packages/pi-ripwire"
+    {
+      "source": "https://github.com/nicobailon/pi-web-access.git",
+      "extensions": []
+    },
+    {
+      "source": "packages/pi-ripwire",
+      "extensions": [],
+      "skills": []
+    },
+    "npm:pi-input-history"
+  ],
+  "extensions": [
+    "-extensions/web-access-toggle.ts",
+    "-extensions/browser-zen/index.ts",
+    "-extensions/web-fetch/index.ts"
   ],
   "defaultThinkingLevel": "low",
   "modelThinkingLevels": {
