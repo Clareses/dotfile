@@ -8,19 +8,26 @@
     "npm:pi-ayu-themes",
     {
       "source": "https://github.com/nicobailon/pi-web-access.git",
-      "extensions": []
+      "extensions": [
+        "+index.ts"
+      ]
     },
     {
       "source": "packages/pi-ripwire",
-      "extensions": [],
-      "skills": []
+      "extensions": [
+        "+extensions/explore.ts"
+      ],
+      "skills": [
+        "-skills/ripwire-before-you-build/SKILL.md",
+        "-skills/ripwire-change-check/SKILL.md"
+      ]
     },
     "npm:pi-input-history"
   ],
   "extensions": [
-    "-extensions/web-access-toggle.ts",
-    "-extensions/browser-zen/index.ts",
-    "-extensions/web-fetch/index.ts"
+    "+extensions/browser-zen/index.ts",
+    "+extensions/web-fetch/index.ts",
+    "+extensions/web-access-toggle.ts"
   ],
   "defaultThinkingLevel": "low",
   "modelThinkingLevels": {
