@@ -69,7 +69,7 @@ local decoration = {
     },
     blur = {
         enabled = true,
-        size = 4,
+        size = 6,
         passes = 4,
         new_optimizations = true,
         ignore_opacity = true,
