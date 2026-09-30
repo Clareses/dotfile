@@ -115,8 +115,15 @@ Item {
     }
 
     function focusInput() {
+        // board itself is not a text input; hand focus to the last/first note
+        // body so the IME actually attaches to something editable.
         board.forceActiveFocus()
+        if (root.focusTarget)
+            root.focusTarget.forceActiveFocus()
     }
+
+    // last note body that had focus, so focusInput() can restore it
+    property Item focusTarget: null
 
     // ---------------- ui ----------------
     ColumnLayout {
@@ -296,7 +303,19 @@ Item {
                         font.family: Theme.fontFamily
                         font.pixelSize: 15
                         textFormat: TextEdit.PlainText
-                        Component.onCompleted: text = note.text
+                        Component.onCompleted: {
+                            text = note.text
+                            if (root.focusTarget === null)
+                                root.focusTarget = body
+                        }
+                        Component.onDestruction: {
+                            if (root.focusTarget === body)
+                                root.focusTarget = null
+                        }
+                        onActiveFocusChanged: {
+                            if (activeFocus)
+                                root.focusTarget = body
+                        }
                         onTextChanged: {
                             if (model.get(note.index) && model.get(note.index).text !== body.text) {
                                 model.setProperty(note.index, "text", body.text)

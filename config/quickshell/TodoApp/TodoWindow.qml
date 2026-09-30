@@ -31,16 +31,50 @@ PanelWindow {
 
     visible: showWindow
 
+    function focusCurrentPane() {
+        if (root.currentTab === 0)
+            todoPane.focusInput()
+        else
+            notesPane.focusInput()
+    }
+
+    // Opening the popup focuses the field before the compositor has actually
+    // activated the layer surface, so fcitx5's Qt plugin sends its FocusIn too
+    // early and the IME stays inactive until you focus away and back. After the
+    // focus grab settles, cycle the focus once so the plugin re-sends FocusIn.
+    // (Same workaround the ALT+B sidebar uses.)
+    Item {
+        id: focusAnchor
+        width: 1
+        height: 1
+    }
+
+    Timer {
+        id: refocusTimer
+        interval: 200
+        repeat: false
+        onTriggered: {
+            if (!root.isOpen)
+                return
+            focusAnchor.forceActiveFocus()
+            Qt.callLater(function () {
+                if (root.isOpen)
+                    root.focusCurrentPane()
+            })
+        }
+    }
+
     onIsOpenChanged: {
         if (isOpen) {
             showWindow = true
-            Qt.callLater(function () {
-                if (root.currentTab === 0)
-                    todoPane.focusInput()
-                else
-                    notesPane.focusInput()
-            })
+            Qt.callLater(root.focusCurrentPane)
+            refocusTimer.restart()
         }
+    }
+
+    onCurrentTabChanged: {
+        if (isOpen)
+            refocusTimer.restart()
     }
 
     property real progress: isOpen ? 1 : 0
