@@ -1,61 +1,63 @@
 # dotfile links manifest
-# 每行: <mode> <repo 内相对路径> <目标绝对路径(~ 可用)>
+# 每行: <mode> <repo 内相对路径> <目标绝对路径(~ 可用)> <target>
 # mode:
 #   linkdir   整目录软链接
 #   linkfile  单文件软链接
 #   mirror    目标目录保持真实存在，把 repo 目录下的每个子项软链接进去，
 #             不动目标里 repo 没有的东西（如 node_modules / 浏览器 profile）
-# 空行和 # 开头会被忽略。
+# target:
+#   分组名，供 install.sh 选择性安装（./install.sh tmux、./install.sh all）。
+#   空行和 # 开头会被忽略。
 
 # ---- window manager / desktop ----
-linkdir  config/hypr                 ~/.config/hypr
-linkdir  config/waybar               ~/.config/waybar
-linkdir  config/i3                   ~/.config/i3
-linkdir  config/quickshell           ~/.config/quickshell
+linkdir  config/hypr                 ~/.config/hypr                 hypr
+linkdir  config/waybar               ~/.config/waybar               waybar
+linkdir  config/i3                   ~/.config/i3                   i3
+linkdir  config/quickshell           ~/.config/quickshell           quickshell
 
 # ---- 输入法 / 通知 ----
-linkdir  config/fcitx5               ~/.config/fcitx5
-linkdir  config/mako                 ~/.config/mako
-linkdir  config/swaync               ~/.config/swaync
+linkdir  config/fcitx5               ~/.config/fcitx5               fcitx5
+linkdir  config/mako                 ~/.config/mako                 mako
+linkdir  config/swaync               ~/.config/swaync               swaync
 
 # ---- terminal ----
-linkdir  config/tmux                 ~/.config/tmux
-linkfile config/fish/config.fish     ~/.config/fish/config.fish
-linkdir  config/fish/conf.d          ~/.config/fish/conf.d
-linkdir  config/fish/functions       ~/.config/fish/functions
-linkdir  config/fish/completions     ~/.config/fish/completions
+linkdir  config/tmux                 ~/.config/tmux                 tmux
+linkfile config/fish/config.fish     ~/.config/fish/config.fish     fish
+linkdir  config/fish/conf.d          ~/.config/fish/conf.d          fish
+linkdir  config/fish/functions       ~/.config/fish/functions       fish
+linkdir  config/fish/completions     ~/.config/fish/completions     fish
 
 # ---- nvim (逐项链接: .metals/.scala-build/.bsp 等运行时留在本地) ----
-linkfile config/nvim/init.lua        ~/.config/nvim/init.lua
-linkfile config/nvim/init            ~/.config/nvim/init
-linkfile config/nvim/basic.lua       ~/.config/nvim/basic.lua
-linkdir  config/nvim/clean           ~/.config/nvim/clean
-linkdir  config/nvim/lua             ~/.config/nvim/lua
-linkdir  config/nvim/back-package    ~/.config/nvim/back-package
-linkfile config/nvim/lazy-lock.json  ~/.config/nvim/lazy-lock.json
-linkfile config/nvim/.scalafmt.conf  ~/.config/nvim/.scalafmt.conf
+linkfile config/nvim/init.lua        ~/.config/nvim/init.lua        nvim
+linkfile config/nvim/init            ~/.config/nvim/init            nvim
+linkfile config/nvim/basic.lua       ~/.config/nvim/basic.lua       nvim
+linkdir  config/nvim/clean           ~/.config/nvim/clean           nvim
+linkdir  config/nvim/lua             ~/.config/nvim/lua             nvim
+linkdir  config/nvim/back-package    ~/.config/nvim/back-package    nvim
+linkfile config/nvim/lazy-lock.json  ~/.config/nvim/lazy-lock.json  nvim
+linkfile config/nvim/.scalafmt.conf  ~/.config/nvim/.scalafmt.conf  nvim
 
 # ---- pi 标量配置 (绝不碰 auth.json / sessions / cache / npm / git) ----
-linkfile home/pi/agent/settings.json    ~/.pi/agent/settings.json
-linkfile home/pi/agent/keybindings.json ~/.pi/agent/keybindings.json
-linkfile home/pi/agent/models.json      ~/.pi/agent/models.json
-linkfile home/pi/agent/pi-input-history.json ~/.pi/agent/pi-input-history.json
-linkdir  home/pi/agent/prompts          ~/.pi/agent/prompts
-linkdir  home/pi/agent/skills           ~/.pi/agent/skills
+linkfile home/pi/agent/settings.json    ~/.pi/agent/settings.json    pi
+linkfile home/pi/agent/keybindings.json ~/.pi/agent/keybindings.json pi
+linkfile home/pi/agent/models.json      ~/.pi/agent/models.json      pi
+linkfile home/pi/agent/pi-input-history.json ~/.pi/agent/pi-input-history.json pi
+linkdir  home/pi/agent/prompts          ~/.pi/agent/prompts          pi
+linkdir  home/pi/agent/skills           ~/.pi/agent/skills           pi
 
 # ---- pi 扩展: 单文件 ----
-linkfile home/pi/agent/extensions/notify.ts            ~/.pi/agent/extensions/notify.ts
-linkfile home/pi/agent/extensions/history.ts           ~/.pi/agent/extensions/history.ts
-linkfile home/pi/agent/extensions/diff.ts              ~/.pi/agent/extensions/diff.ts
-linkfile home/pi/agent/extensions/ask-user-question.ts ~/.pi/agent/extensions/ask-user-question.ts
-linkfile home/pi/agent/extensions/web-access-toggle.ts ~/.pi/agent/extensions/web-access-toggle.ts
-linkfile home/pi/agent/extensions/image-preview.ts      ~/.pi/agent/extensions/image-preview.ts
-linkfile home/pi/agent/extensions/show-image.ts         ~/.pi/agent/extensions/show-image.ts
+linkfile home/pi/agent/extensions/notify.ts            ~/.pi/agent/extensions/notify.ts            pi
+linkfile home/pi/agent/extensions/history.ts           ~/.pi/agent/extensions/history.ts           pi
+linkfile home/pi/agent/extensions/diff.ts              ~/.pi/agent/extensions/diff.ts              pi
+linkfile home/pi/agent/extensions/ask-user-question.ts ~/.pi/agent/extensions/ask-user-question.ts pi
+linkfile home/pi/agent/extensions/web-access-toggle.ts ~/.pi/agent/extensions/web-access-toggle.ts pi
+linkfile home/pi/agent/extensions/image-preview.ts      ~/.pi/agent/extensions/image-preview.ts      pi
+linkfile home/pi/agent/extensions/show-image.ts         ~/.pi/agent/extensions/show-image.ts         pi
 
 # ---- pi 扩展: 项目源码 (mirror, 保留 node_modules / profile / .git) ----
-mirror   home/pi/agent/extensions/browser-zen             ~/.pi/agent/extensions/browser-zen
-mirror   home/pi/agent/extensions/web-fetch               ~/.pi/agent/extensions/web-fetch
-mirror   home/pi/agent/extensions/pi-interactive-subagents ~/.pi/agent/extensions/pi-interactive-subagents
+mirror   home/pi/agent/extensions/browser-zen             ~/.pi/agent/extensions/browser-zen             pi
+mirror   home/pi/agent/extensions/web-fetch               ~/.pi/agent/extensions/web-fetch               pi
+mirror   home/pi/agent/extensions/pi-interactive-subagents ~/.pi/agent/extensions/pi-interactive-subagents pi
 
 # ---- pi package: ripwire (扩展 + 17 个 skill 打包在一起) ----
-linkdir  home/pi/agent/packages/pi-ripwire ~/.pi/agent/packages/pi-ripwire
+linkdir  home/pi/agent/packages/pi-ripwire ~/.pi/agent/packages/pi-ripwire pi
