@@ -1,6 +1,6 @@
 # zotero-skill
 
-A Claude Code skill for searching your local Zotero library. One Python file, zero dependencies, no server process.
+A Claude Code skill for searching **and organizing** your local Zotero library. Pure Python stdlib, no dependencies, no server process.
 
 ## Why not MCP?
 
@@ -24,7 +24,8 @@ This skill takes the opposite approach:
 - **Author / Tag / Collection / DOI / Recent** — all the lookup modes you'd expect
 - **Two-stage retrieval** — `--compact` for scanning, `get` for details (controls token budget)
 - **Deterministic relevance** — phrase match > whole word > substring. You can see why result #1 is #1
-- **Read-only** — opens SQLite with `immutable=1`, safe to run while Zotero is open
+- **Read-only search** — opens SQLite with `immutable=1`, safe to run while Zotero is open
+- **Write support (opt-in)** — create collections and move items via the Zotero Local HTTP API (`zotero-write.py`)
 
 ## Requirements
 
@@ -94,9 +95,44 @@ Once installed, just talk naturally:
 
 The skill handles intent mapping, search execution, and result formatting automatically.
 
+## Writing to Your Library (Local API)
+
+Searching never modifies anything. To **create collections and move items**, use the
+separate `scripts/zotero-write.py`, which talks to Zotero's Local HTTP API:
+
+1. Enable it in Zotero → **Settings → Advanced** →
+   "Allow other applications on this computer to communicate with Zotero".
+2. Authorize once (writes need an API key, cached at `~/.config/zotero-skill/local-api-key`):
+
+```bash
+python3 scripts/zotero-write.py authorize
+```
+
+```bash
+python3 scripts/zotero-write.py ping                     # API + server id + library version
+python3 scripts/zotero-write.py collections              # keys, parents, counts
+python3 scripts/zotero-write.py create-collection MLSYS26 --parent infra
+python3 scripts/zotero-write.py move WUP62SW3 --from infra --to MLSYS26
+python3 scripts/zotero-write.py move-collection \
+    --from infra --to MLSYS26 --parent infra --create-target \
+    --except F482FXCD VZ4ATNX4 --dry-run
+```
+
+`move` = **add to target + remove from source** (an item can belong to several
+collections). Writes are guarded with `If-Unmodified-Since-Version` and retry once
+on a 412 conflict. See `SKILL.md` for the full command reference.
+
+> Note: search reads the SQLite file with `immutable=1` and ignores the WAL, so it may
+> briefly lag behind a write until Zotero checkpoints the WAL. Use `zotero-write.py
+> collections` for the authoritative current state.
+
 ## How It Works
 
-Reads Zotero's SQLite database directly (`mode=ro&immutable=1` — safe, no locks). No intermediate server, no API, no network calls.
+**Search** reads Zotero's SQLite database directly (`mode=ro&immutable=1` — safe,
+no locks). No intermediate server, no API, no network calls.
+
+**Write** (`zotero-write.py`) uses Zotero's Local HTTP API (`127.0.0.1:23119`) —
+Zotero must be running, and an API key is required for mutations.
 
 - **Keyword search**: SQL LIKE across title + abstract + journal + authors + notes, then re-ranked by a deterministic scoring function (phrase > whole word > substring)
 - **Fulltext search**: Queries Zotero's built-in `fulltextWords` / `fulltextItemWords` tables (the same inverted index Zotero uses internally), then re-ranked by metadata relevance
@@ -134,7 +170,10 @@ A: Yes. It opens the database with `immutable=1`, completely bypassing file lock
 A: Current embedding models produce too much noise for academic literature retrieval. Deterministic keyword + fulltext search with proper relevance scoring is more predictable and inspectable. If you disagree, there are more than 10 MCP servers waiting for you.
 
 **Q: Can this modify my Zotero library?**
-A: No. Read-only access, enforced at the SQLite connection level.
+A: Searching cannot — it is read-only at the SQLite connection level. Organizing
+(creating collections, moving items) is available separately through 
+`scripts/zotero-write.py` over Zotero's Local HTTP API, which requires Zotero to be
+running, the local API enabled, and a one-time API key (`authorize`).
 
 **Q: What about Zotero's Web API?**
 A: This skill is local-only by design. No network calls, no API keys, no cloud dependency. Your library data stays on your machine.

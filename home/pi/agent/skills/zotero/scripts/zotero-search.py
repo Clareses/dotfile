@@ -16,6 +16,9 @@ Modes:
   doi "10.xxxx/..."        Exact DOI lookup
   get KEY1 [KEY2 ...]      Batch fetch details by itemKey
 
+Read-only. For write operations (create collections, move items) use
+zotero-write.py, which talks to the Zotero Local HTTP API.
+
 Global options:
   --limit N                Max results (default: 20)
   --type TYPE              Filter by item type

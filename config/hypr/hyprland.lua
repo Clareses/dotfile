@@ -259,15 +259,13 @@ hl.window_rule({
 hl.window_rule({
     name = "for-bilibili",
     match = {
-        title = ".*Picture-in-Picture.*"
+        title = ".*画中画.*"
     },
     border_size = 0,
-    no_blur = true,
+    no_blur = false,
     no_shadow = true,
     pin = true,
     float = true,
-    size = { 595, 350 },
-    move = { 1950, 55 },
     no_focus = false
 })
 

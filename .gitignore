@@ -17,6 +17,7 @@ config/nvim/.scala-build/
 config/nvim/.bsp/
 **/node_modules/
 **/.zen-ai-profile/
+**/__pycache__/
 **/*.log
 
 # ---- 由 matugen/脚本生成的配色（想版本化就删掉这几行）----

@@ -53,9 +53,9 @@ PanelWindow {
     readonly property var defaultSettings: ({
         "bar":    { "height": 40, "reservedHeight": 72, "enabled": true, "alwaysExpanded": false },
         "pill":   { "collapsedWidth": 0, "expandedWidth": 680, "radius": 12, "animationDuration": 350 },
-        "modules":{ "left": ["terminal", "workspaces"],
+        "modules":{ "left": ["terminal", "network", "workspaces"],
                     "center": ["launcher", "clock", "swaync"],
-                    "right": ["updates", "battery", "powerprofile", "volume", "systemtray", "logo", "power"] },
+                    "right": ["updates", "battery", "network", "powerprofile", "volume", "systemtray", "logo", "power"] },
         "border": { "width": 2, "colorTop": "", "colorBottom": "" },
         "opacity":{ "collapsed": 0.6, "expanded": 0.8 },
         "clock":  { "format": "HH:mm", "dateFormat": "ddd, dd MMM" },
@@ -293,6 +293,7 @@ PanelWindow {
         }
     }
     Component { id: cPowerProfile; PowerProfileModule {} }
+    Component { id: cNetwork;     NetworkModule {} }
 
     readonly property var moduleComponents: ({
         "terminal":   cTerminal,
@@ -308,7 +309,8 @@ PanelWindow {
         "volume":       cVolume,
         "brightness":   cBrightness,
         "battery":      cBattery,
-        "powerprofile": cPowerProfile
+        "powerprofile": cPowerProfile,
+        "network":      cNetwork
     })
 
     // --- KEYBOARD NAVIGATION ---

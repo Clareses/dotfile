@@ -15,9 +15,9 @@ Default configuration file for the Quickshell Statusbar.
         "animationDuration": 350
     },
     "modules": {
-        "left":   ["workspaces", "terminal"],
+        "left":   ["workspaces", "terminal", "network", "swaync"],
         "center": ["launcher", "clock", "swaync"],
-        "right":  ["updates", "battery", "powerprofile", "volume", "systemtray", "logo", "power"]
+        "right":  ["updates", "battery", "network", "powerprofile", "volume", "systemtray", "logo", "power"]
     },
     "border": {
         "width": 2,
