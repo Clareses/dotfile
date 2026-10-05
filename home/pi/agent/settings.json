@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.87.0",
+  "lastChangelogVersion": "1.0.2",
   "theme": "ayu-mirage",
   "defaultProvider": "opencode-go",
   "defaultModel": "deepseek-v4.1-flash",
@@ -40,9 +40,12 @@
     "yun/gpt-6-astra": "high",
     "yun/gpt-6-sol": "high"
   },
-  "hideThinkingBlock": false,
+  "hideThinkingBlock": true,
   "treeFilterMode": "no-tools",
   "doubleEscapeAction": "none",
   "tuiMode": "regular",
-  "outputPad": 1
+  "outputPad": 1,
+  "terminal": {
+    "showTerminalProgress": false
+  }
 }

@@ -608,12 +608,13 @@ export default function (pi: ExtensionAPI): void {
 		name: "show_image",
 		label: "Show Image",
 		description:
-			"Show an image in a focused tmux pane using `kitten icat`. The pane supports a history of previously shown images (←/→ to browse) and closes on Enter. Use this instead of running `kitten icat` via bash, which fails because tool shells have no controlling terminal.",
+			"Show an image in a focused tmux pane using `kitten icat`. The pane supports a history of previously shown images (←/→ to browse) and closes on Enter. This displays the image to the user only; it does not return the image to you — use read to inspect image content. Use this instead of running `kitten icat` via bash, which fails because tool shells have no controlling terminal.",
 		promptSnippet: "Show an image in a focused tmux pane (kitten icat) with history",
 		promptGuidelines: [
-			"Use show_image when the user wants to see or preview an image in the terminal.",
+			"Use show_image ONLY when the user asks to see or preview an image in the terminal; it displays the image to the user, it does not let you inspect it.",
+			"Do NOT use show_image to look at an image yourself — it returns only a status line, never the image content. Use read when you need to see an image's pixels.",
 			"Prefer show_image over `kitten icat` in bash: tool shells are detached and kitten fails with 'open /dev/tty: no such device or address'.",
-			"When the user pastes an image, call show_image with no path to display the newest pasted clipboard image, or pass its /tmp/pi-clipboard-*.png path explicitly.",
+			"When the user pastes an image and asks to see it, call show_image with no path to display the newest pasted clipboard image, or pass its /tmp/pi-clipboard-*.png path explicitly.",
 		],
 		parameters: Type.Object({
 			path: Type.Optional(
