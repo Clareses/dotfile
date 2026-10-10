@@ -133,13 +133,13 @@ bind(mainMod .. "SHIFT + j", win.move({ direction = "d" }))
 -- workspace bindings and settings
 for i = 1, 10, 1 do
     hl.workspace_rule({ workspace = "0" .. tostring(i), monitor = "HDMI-A-1" })
-    hl.workspace_rule({ workspace = "1" .. tostring(i), monitor = "DP-2" })
+    hl.workspace_rule({ workspace = "1" .. tostring(i), monitor = "DP-1" })
     local key = i
     if i == 10 then key = 0 end
 
     bind(mainMod .. "+ " .. key, function()
         local wstr = tostring(i)
-        if hl.get_active_monitor().name == "DP-2" then
+        if hl.get_active_monitor().name == "DP-1" then
             if i == 10 then wstr = "20" else wstr = "1" .. wstr end
         else
             wstr = "0" .. wstr
@@ -149,7 +149,7 @@ for i = 1, 10, 1 do
 
     bind(mainMod .. "+ SHIFT + " .. key, function()
         local wstr = tostring(i)
-        if hl.get_active_monitor().name == "DP-2" then
+        if hl.get_active_monitor().name == "DP-1" then
             if i == 10 then wstr = "20" else wstr = "1" .. wstr end
         else
             wstr = "0" .. wstr
@@ -157,7 +157,7 @@ for i = 1, 10, 1 do
         hl.dispatch(win.move({ workspace = wstr }))
     end)
 end
-hl.workspace_rule({ workspace = "20", monitor = "DP-2" })
+hl.workspace_rule({ workspace = "20", monitor = "DP-1" })
 hl.workspace_rule({ workspace = "21", monitor = "eDP-1", persistent = true })
 bind(mainMod .. "+ BACKSPACE", hl.dsp.focus({ workspace = "21" }))
 bind(mainMod .. "+ SHIFT + BACKSPACE", win.move({ workspace = "21" }))
@@ -290,7 +290,7 @@ hl.monitor({
     scale = "1.0",
 })
 hl.monitor({
-    output = "DP-2",
+    output = "DP-1",
     mode = "2560x1440@75",
     scale = "1.07",
     position = "4160x0"

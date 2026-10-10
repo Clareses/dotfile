@@ -50,22 +50,23 @@ RowLayout {
                 if (mouse.button === Qt.LeftButton && !modelData.onlyMenu) {
                     modelData.activate()
                 } else if (modelData.hasMenu) {
-                    trayMenu.open()
+                    trayMenu.visible = true
                 }
             }
 
-            QsMenuAnchor {
+            TrayMenu {
                 id: trayMenu
-                menu: trayItem.modelData.menu
+                menuHandle: trayItem.modelData.menu
                 anchor.item: trayItem
                 anchor.edges: Edges.Bottom
                 anchor.gravity: Edges.Bottom
+                anchor.margins.top: 6
 
                 // Keep the bar expanded for as long as the menu is open so the
                 // anchor item (and this popup) survive the pointer leaving the
                 // bar surface.
-                onOpened: tray.openMenuCount++
-                onClosed: tray.openMenuCount--
+                onVisibleChanged: tray.openMenuCount += visible ? 1 : -1
+                onDismissed: trayMenu.visible = false
             }
         }
     }
