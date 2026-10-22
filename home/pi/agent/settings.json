@@ -27,7 +27,9 @@
   "extensions": [
     "+extensions/browser-zen/index.ts",
     "+extensions/web-fetch/index.ts",
-    "+extensions/web-access-toggle.ts"
+    "+extensions/web-access-toggle.ts",
+    "-builtin:llama.cpp",
+    "-builtin:mcp"
   ],
   "defaultThinkingLevel": "low",
   "modelThinkingLevels": {
