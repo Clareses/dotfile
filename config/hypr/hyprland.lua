@@ -40,7 +40,7 @@ local input = {
     touchpad = {
         natural_scroll = true,
         disable_while_typing = true,
-        scroll_factor = 1,
+        scroll_factor = 0.25,
     },
     sensitivity = 0,
 }
