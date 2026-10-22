@@ -1,0 +1,9 @@
+{
+  "name": "pi-repo-structure",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A toggleable pi extension: scan a repo's structure or scaffold layered AGENTS.md files.",
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}

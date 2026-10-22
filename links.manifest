@@ -58,6 +58,7 @@ linkfile home/pi/agent/extensions/show-image.ts         ~/.pi/agent/extensions/s
 mirror   home/pi/agent/extensions/browser-zen             ~/.pi/agent/extensions/browser-zen             pi
 mirror   home/pi/agent/extensions/web-fetch               ~/.pi/agent/extensions/web-fetch               pi
 mirror   home/pi/agent/extensions/pi-interactive-subagents ~/.pi/agent/extensions/pi-interactive-subagents pi
+mirror   home/pi/agent/extensions/repo-structure         ~/.pi/agent/extensions/repo-structure          pi
 
 # ---- pi package: ripwire (扩展 + 17 个 skill 打包在一起) ----
 linkdir  home/pi/agent/packages/pi-ripwire ~/.pi/agent/packages/pi-ripwire pi
