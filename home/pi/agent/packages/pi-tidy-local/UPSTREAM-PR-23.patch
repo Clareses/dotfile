@@ -1,0 +1,499 @@
+From 8803fcbe8c691cd3de6a778b008dcbfb9b8eea84 Mon Sep 17 00:00:00 2001
+From: Anshul Joshi <joshianshul98@gmail.com>
+Date: Tue, 27 Oct 2026 01:00:46 -0400
+Subject: [PATCH] Opt-in thinkingOpen: thinking starts expanded (#22)
+
+---
+ CHANGELOG.md               |  11 ++
+ README.md                  |   9 +-
+ config.ts                  |   8 ++
+ index.ts                   |   4 +
+ test/config.test.ts        |   6 +
+ test/thinking-open.test.ts | 223 +++++++++++++++++++++++++++++++++++++
+ tool-frame.ts              |   8 ++
+ tool-group-view.ts         |  46 ++++++++
+ 8 files changed, 312 insertions(+), 3 deletions(-)
+ create mode 100644 test/thinking-open.test.ts
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 22435dc..3756c79 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -4,6 +4,17 @@ What changed in each released version of pi-tidy (published as
+ `@andy8647/pi-toolbox` up to 0.4.1). Versions follow
+ [semantic versioning](https://semver.org/spec/v2.0.0.html).
+ 
++## [Unreleased]
++
++### Added
++
++**`thinkingOpen` starts every thinking run expanded.** With the setting on, the run before a reply opens in
++its box, and each step's run opens under its row once you open the group, so an opened group shows its whole
++reasoning at once. Groups themselves still start folded. A click folds a run and it stays folded, including a
++fold made while a step was still drawing as a plain message before its call arrived. The default (`false`)
++keeps today's preview rows. With `groupTools: false` pi draws thinking itself, and its `hideThinkingBlock`
++applies.
++
+ ## [0.4.11] - 2026-10-24
+ 
+ ### Fixed
+diff --git a/README.md b/README.md
+index 142ddd7..5f1bcae 100644
+--- a/README.md
++++ b/README.md
+@@ -45,9 +45,10 @@ every box gets a rounded transparent frame.
+   no summary to carry it) and the preview slides over the newest words; once it stops, the row settles
+   to a short head preview capped at 56 cells — a glance, not a paragraph. pi's `hideThinkingBlock`
+   setting is ignored on purpose: the row is the same whether thinking is configured on or off, and the
+-  click is the one way to read it. A message that both thinks and writes gets the same row for its
+-  label (clicking it opens the same box), and its run stays out of the group's count — it renders above
+-  the text, not as a row in the list
++  click is the one way to read it — unless you set `thinkingOpen`, which starts every run expanded (an
++  opened group then shows its whole reasoning at once) and leaves the click to fold it. A message that
++  both thinks and writes gets the same row for its label (clicking it opens the same box), and its run
++  stays out of the group's count — it renders above the text, not as a row in the list
+ - **Background jobs** — a call that starts a long-running process (pi-processes' `process start`) shows
+   the *process's* state on its row: `◐ process ticker  running 12s · READY matched`, then
+   `✓ … exited 0 · 20s` / `✗ … exit 1` / `⊘ … killed SIGTERM`. The summary spins while one runs
+@@ -145,6 +146,7 @@ Add a `tidy` key to your `~/.pi/agent/settings.json`; changes apply on `/reload`
+     "writeLines": 10,
+     "diffLines": 20,
+     "thinkingColor": "warning",
++    "thinkingOpen": false,
+     "groupTools": true,
+     "alwaysShowTools": ["edit", "write"],
+     "backgroundJobs": true,
+@@ -184,6 +186,7 @@ Add a `tidy` key to your `~/.pi/agent/settings.json`; changes apply on `/reload`
+ | `splitDiff` | boolean | `true` | Render an edit's diff as two panes (`old │ new`) with line numbers, a bar and a tinted row per changed line. `false` keeps pi's unified diff |
+ | `splitDiffMinWidth` | number | `72` | Box width below which the split is dropped for pi's unified diff — two panes need room to stay readable |
+ | `thinkingColor` | theme color | `warning` | Colour of the brain, the `N thoughts` count and an expanded thinking box. Any theme color name or `#rrggbb` |
++| `thinkingOpen` | boolean | `false` | Start every thinking run expanded instead of as a one-line preview: the run before a reply in its box, and each step's run under its row once you open the group. A click folds a run and it stays folded. Groups themselves still start folded. With `groupTools: false` pi draws thinking itself and its `hideThinkingBlock` applies |
+ | `diffLines` | number | `20` | Diff rows drawn while an edit box is collapsed. The window is anchored at the first changed line (a third of the budget of context above it), with `… (N more lines, M total, ctrl+o to expand)` under it — pi's own edit renderer has no budget at all, so this is the only thing keeping a long diff from owning the screen. `ctrl+o` draws all of it, `0` keeps just the summary row |
+ | `bashResultLines` | number | `1` | Visual lines of bash *output* shown while collapsed. pi's renderer hard-codes 5 with no setting; raise this for more context, `0` to hide output until you expand |
+ | `writeLines` | number | `10` | Visual lines of a written file shown while the box is collapsed (pi's own number, now adjustable). `0` keeps just the header until you expand. Requires Pi's `registerToolRenderer` API |
+diff --git a/config.ts b/config.ts
+index 1f961e3..25e864a 100644
+--- a/config.ts
++++ b/config.ts
+@@ -65,6 +65,12 @@ export interface TidyConfig {
+    * `#rrggbb`.
+    */
+   thinkingColor: string;
++  /**
++   * Thinking starts expanded: a run's full text instead of its one-line
++   * preview, inside a group and outside one. A click still folds it. Groups
++   * themselves still start folded.
++   */
++  thinkingOpen: boolean;
+   /**
+    * Per-tool border color for successful executions (theme fg color names;
+    * pending stays grey, error stays red). When set in settings, the map
+@@ -103,6 +109,7 @@ const DEFAULTS: TidyConfig = {
+   splitDiffMinWidth: 72,
+   diffLines: 20,
+   thinkingColor: "warning",
++  thinkingOpen: false,
+   messageBorderColors: {
+     user: "toolTitle",
+     compaction: "customMessageLabel",
+@@ -143,6 +150,7 @@ export function loadConfig(): TidyConfig {
+         typeof toolbox?.splitDiffMinWidth === "number" ? toolbox.splitDiffMinWidth : DEFAULTS.splitDiffMinWidth,
+       diffLines: typeof toolbox?.diffLines === "number" ? toolbox.diffLines : DEFAULTS.diffLines,
+       thinkingColor: typeof toolbox?.thinkingColor === "string" ? toolbox.thinkingColor : DEFAULTS.thinkingColor,
++      thinkingOpen: typeof toolbox?.thinkingOpen === "boolean" ? toolbox.thinkingOpen : DEFAULTS.thinkingOpen,
+       messageBorderColors: {
+         ...DEFAULTS.messageBorderColors,
+         ...toolbox?.messageBorderColors,
+diff --git a/index.ts b/index.ts
+index 00c41d6..937e01f 100644
+--- a/index.ts
++++ b/index.ts
+@@ -29,6 +29,9 @@
+  *     0 hides the body). pi's own edit renderer has no budget at all.
+  *   thinkingColor: string   — color for thinking rows and the thinking box
+  *     (default: warning, a yellow)
++ *   thinkingOpen: boolean   — thinking starts expanded instead of as a one-line
++ *     preview; a click still folds it. No effect with groupTools: false, where
++ *     pi draws thinking itself (default: false)
+  *   messageBorderColors: per-kind theme fg colors for message-box borders
+  *     (user/compaction/branch/skill/custom; defaults toolTitle/customMessageLabel/
+  *      mdCode/accent/warning)
+@@ -223,6 +226,7 @@ export default function (pi: ExtensionAPI): void {
+       splitDiffMinWidth: config.splitDiffMinWidth,
+       diffLines: config.diffLines,
+       thinkingColor: config.thinkingColor,
++      thinkingOpen: config.thinkingOpen,
+     });
+     // Live job updates (pi-processes broadcasts on the shared extension bus).
+     connectJobs(config.backgroundJobs ? (pi as { events?: EventBusLike }).events : undefined);
+diff --git a/test/config.test.ts b/test/config.test.ts
+index 0fb211a..d8e9c94 100644
+--- a/test/config.test.ts
++++ b/test/config.test.ts
+@@ -31,6 +31,12 @@ test("settings come from the `tidy` key", () => {
+   });
+ });
+ 
++test("thinkingOpen is off unless set to a boolean", () => {
++  withSettings({}, () => assert.equal(loadConfig().thinkingOpen, false));
++  withSettings({ tidy: { thinkingOpen: true } }, () => assert.equal(loadConfig().thinkingOpen, true));
++  withSettings({ tidy: { thinkingOpen: "yes" } }, () => assert.equal(loadConfig().thinkingOpen, false));
++});
++
+ test("the pre-rename `toolbox` key still works, and `tidy` wins over it", () => {
+   withSettings({ toolbox: { icons: false } }, () => assert.equal(loadConfig().icons, false));
+   withSettings({ toolbox: { icons: false }, tidy: { icons: true } }, () => assert.equal(loadConfig().icons, true));
+diff --git a/test/thinking-open.test.ts b/test/thinking-open.test.ts
+new file mode 100644
+index 0000000..b49caea
+--- /dev/null
++++ b/test/thinking-open.test.ts
+@@ -0,0 +1,223 @@
++/**
++ * `thinkingOpen: true`: thinking starts expanded, inside a group and outside
++ * one, and a click still folds it. Its own file (node --test isolates files)
++ * because the option is process-wide.
++ */
++
++import assert from "node:assert/strict";
++import { test } from "node:test";
++import {
++  AssistantMessageComponent,
++  createBashToolDefinition,
++  initTheme,
++  ToolExecutionComponent,
++} from "@earendil-works/pi-coding-agent";
++import { Container } from "@earendil-works/pi-tui";
++import { patchToolBoxFrames } from "../frame.ts";
++import { resetGroups } from "../tool-groups.ts";
++
++initTheme("dark");
++patchToolBoxFrames({ icons: false, groupTools: true, thinkingOpen: true });
++
++let renders = 0;
++const ui = { requestRender: () => renders++ };
++const cwd = process.cwd();
++const bashDef = createBashToolDefinition(cwd);
++const W = 90;
++
++let nextId = 0;
++const callBlock = (id: string) => ({ type: "toolCall", id, name: "bash", arguments: {} });
++
++function bash(command: string, output: string) {
++  const id = `call-${++nextId}`;
++  const c = new ToolExecutionComponent("bash", id, { command }, {}, bashDef as any, ui as any, cwd);
++  c.setExpanded(false);
++  c.setArgsComplete();
++  c.markExecutionStarted();
++  c.updateResult({ content: [{ type: "text", text: output }], isError: false, durationMs: 150 } as any, false);
++  return { id, component: c };
++}
++
++const textStep = (t: string, id: string) =>
++  new AssistantMessageComponent({ role: "assistant", content: [{ type: "text", text: t }, callBlock(id)], stopReason: "toolUse" } as any);
++/** A tool-only step with thinking, pi's own setting hiding it. */
++const thinkStep = (id: string, thinking: string) =>
++  new AssistantMessageComponent(
++    { role: "assistant", content: [{ type: "thinking", thinking }, callBlock(id)], stopReason: "toolUse" } as any,
++    true,
++  );
++
++const strip = (s: string) => s.replace(/\x1b(?:\[[0-9;:?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)?|_[^\x07]*\x07)/g, "").trimEnd();
++
++function frame(chat: Container): string[] {
++  let lines: string[] = [];
++  for (let i = 0; i < 5; i++) {
++    const before = renders;
++    lines = chat.render(W);
++    if (renders === before) break;
++  }
++  return lines.map(strip).map((line) => line.replace(/ {2,}/g, "  "));
++}
++
++function click(chat: Container, needle: string): void {
++  const lines = frame(chat);
++  const y = lines.findIndex((line) => line.includes(needle));
++  assert.ok(y >= 0, `no row containing ${JSON.stringify(needle)}:\n${lines.join("\n")}`);
++  chat.handleMouse({ type: "click", button: "left", x: 4, y, screenX: 4, screenY: y, width: W, height: lines.length } as any);
++}
++
++const visible = (lines: string[]) => lines.filter((line) => line.trim());
++// Longer than a preview row, so only an expanded run shows its tail.
++const LONG = "先确认一下这个目录里有什么东西，然后再决定下一步怎么做，最后把结论写进结尾标记里。这一段故意写得很长，用来验证预览行真的会截断。";
++
++test("an opened group shows each step's whole run without a click per row; a click folds one", () => {
++  resetGroups();
++  const chat = new Container();
++  const a = bash("ls", "a");
++  const b = bash("pwd", "/tmp");
++  chat.addChild(textStep("Checking.", a.id));
++  chat.addChild(thinkStep(a.id, LONG));
++  chat.addChild(a.component);
++  chat.addChild(thinkStep(b.id, "再看工作目录是不是仓库根。"));
++  chat.addChild(b.component);
++
++  // The group itself still starts folded.
++  assert.deepEqual(visible(frame(chat)), [" Checking.", " ▸ 2 calls · bash×2 · 2 thoughts · 0.3s"]);
++
++  click(chat, "2 calls");
++  const open = frame(chat);
++  assert.ok(open.some((line) => line.includes("结尾标记")), `the first run is expanded:\n${open.join("\n")}`);
++  assert.ok(open.some((line) => line.includes("✓ bash pwd")), open.join("\n"));
++
++  // A click on the run's row folds it, and later frames leave it folded.
++  click(chat, "thinking  先确认一下这个目录");
++  frame(chat);
++  const folded = frame(chat);
++  assert.ok(!folded.some((line) => line.includes("结尾标记")), `the fold sticks:\n${folded.join("\n")}`);
++  assert.ok(folded.some((line) => line.startsWith(" │ thinking  先确认一下这个目录")), folded.join("\n"));
++});
++
++test("thinking before a reply starts in its box, and a click folds it for good", () => {
++  resetGroups();
++  const chat = new Container();
++  chat.addChild(
++    new AssistantMessageComponent(
++      { role: "assistant", content: [{ type: "thinking", thinking: LONG }, { type: "text", text: "Done." }], stopReason: "stop" } as any,
++      true,
++    ),
++  );
++  const open = frame(chat);
++  assert.ok(open.some((line) => line.includes("结尾标记")), `expanded on the first frame:\n${open.join("\n")}`);
++  assert.ok(open.some((line) => line.includes("╭")), `outside a group it gets the box:\n${open.join("\n")}`);
++
++  click(chat, "thinking");
++  frame(chat);
++  const folded = frame(chat);
++  assert.ok(!folded.some((line) => line.includes("结尾标记")), folded.join("\n"));
++  assert.ok(folded.some((line) => line.includes("Done.")));
++});
++
++test("a step that streams its thinking before its call arrives still opens as a group row", () => {
++  resetGroups();
++  const chat = new Container();
++  const a = bash("ls", "a");
++  chat.addChild(textStep("Checking.", a.id));
++  chat.addChild(a.component);
++  const streaming = new AssistantMessageComponent(undefined, true);
++  streaming.updateContent({ role: "assistant", content: [{ type: "thinking", thinking: LONG }] } as any, true);
++  chat.addChild(streaming);
++  frame(chat);
++
++  const b = bash("pwd", "/tmp");
++  streaming.updateContent(
++    { role: "assistant", content: [{ type: "thinking", thinking: LONG }, callBlock(b.id)], stopReason: "toolUse" } as any,
++    false,
++  );
++  chat.addChild(b.component);
++  click(chat, "2 calls");
++  const open = frame(chat);
++  assert.ok(open.some((line) => line.includes("结尾标记")), open.join("\n"));
++});
++
++test("at a turn's start a step first draws as a plain message, then opens as a row once its call arrives", () => {
++  resetGroups();
++  const chat = new Container();
++  const streaming = new AssistantMessageComponent(undefined, true);
++  streaming.updateContent({ role: "assistant", content: [{ type: "thinking", thinking: LONG }] } as any, true);
++  chat.addChild(streaming);
++  // Nothing was called yet: the run draws outside any group, already open.
++  assert.ok(frame(chat).some((line) => line.includes("结尾标记")));
++
++  const a = bash("ls", "a");
++  streaming.updateContent(
++    { role: "assistant", content: [{ type: "thinking", thinking: LONG }, callBlock(a.id)], stopReason: "toolUse" } as any,
++    false,
++  );
++  chat.addChild(a.component);
++  chat.addChild(new AssistantMessageComponent({ role: "assistant", content: [{ type: "text", text: "Done." }], stopReason: "stop" } as any));
++  click(chat, "1 call");
++  const open = frame(chat);
++  assert.ok(open.some((line) => line.includes("结尾标记")), `still open as a group row:\n${open.join("\n")}`);
++});
++
++test("a fold made while the step drew as a plain message survives its call arriving", () => {
++  resetGroups();
++  const chat = new Container();
++  const streaming = new AssistantMessageComponent(undefined, true);
++  streaming.updateContent({ role: "assistant", content: [{ type: "thinking", thinking: LONG }] } as any, true);
++  chat.addChild(streaming);
++  assert.ok(frame(chat).some((line) => line.includes("结尾标记")));
++  click(chat, "thinking");
++  assert.ok(!frame(chat).some((line) => line.includes("结尾标记")), "folded before the call");
++
++  const a = bash("ls", "a");
++  streaming.updateContent(
++    { role: "assistant", content: [{ type: "thinking", thinking: LONG }, callBlock(a.id)], stopReason: "toolUse" } as any,
++    false,
++  );
++  chat.addChild(a.component);
++  chat.addChild(new AssistantMessageComponent({ role: "assistant", content: [{ type: "text", text: "Done." }], stopReason: "stop" } as any));
++  click(chat, "1 call");
++  const open = frame(chat);
++  assert.ok(!open.some((line) => line.includes("结尾标记")), `the fold survives:\n${open.join("\n")}`);
++  assert.ok(open.some((line) => line.includes("thinking  先确认一下这个目录")), open.join("\n"));
++});
++
++test("pi's hide-thinking toggle folds every run, opened or not", () => {
++  resetGroups();
++  const chat = new Container();
++  const a = bash("ls", "a");
++  const step = thinkStep(a.id, LONG);
++  const reply = new AssistantMessageComponent(
++    { role: "assistant", content: [{ type: "thinking", thinking: LONG }, { type: "text", text: "Done." }], stopReason: "stop" } as any,
++    true,
++  );
++  chat.addChild(textStep("Checking.", a.id));
++  chat.addChild(step);
++  chat.addChild(a.component);
++  chat.addChild(reply);
++  click(chat, "1 call");
++  assert.equal(frame(chat).filter((line) => line.includes("结尾标记")).length, 2);
++
++  // ctrl+t calls setHideThinkingBlock on every message; it clears the per-run map.
++  step.setHideThinkingBlock(false);
++  reply.setHideThinkingBlock(false);
++  const folded = frame(chat);
++  assert.ok(!folded.some((line) => line.includes("结尾标记")), folded.join("\n"));
++});
++
++// Last: re-patching is process-wide.
++test("with groupTools off pi draws thinking itself, so thinkingOpen changes nothing", () => {
++  patchToolBoxFrames({ icons: false, groupTools: false, thinkingOpen: true });
++  resetGroups();
++  const chat = new Container();
++  chat.addChild(
++    new AssistantMessageComponent(
++      { role: "assistant", content: [{ type: "thinking", thinking: LONG }, { type: "text", text: "Done." }], stopReason: "stop" } as any,
++      true,
++    ),
++  );
++  const lines = frame(chat);
++  assert.ok(!lines.some((line) => line.includes("结尾标记")), `pi's hideThinkingBlock applies:\n${lines.join("\n")}`);
++  assert.ok(lines.some((line) => line.includes("Done.")));
++});
+diff --git a/tool-frame.ts b/tool-frame.ts
+index afc7959..14311b6 100644
+--- a/tool-frame.ts
++++ b/tool-frame.ts
+@@ -36,6 +36,7 @@ import {
+   setGroupingActive,
+   setIconsEnabled,
+   setThinkingColor,
++  setThinkingOpen,
+   type GroupedTool,
+ } from "./tool-group-view.ts";
+ 
+@@ -117,6 +118,8 @@ export interface ToolFrameOptions {
+   diffLines?: number;
+   /** Theme color for thinking rows and the expanded thinking box (default `warning`). */
+   thinkingColor?: string;
++  /** Thinking starts expanded instead of as a one-line preview (default false). */
++  thinkingOpen?: boolean;
+ }
+ 
+ interface ResolvedToolFrameOptions {
+@@ -128,6 +131,7 @@ interface ResolvedToolFrameOptions {
+   splitDiffMinWidth: number;
+   diffLines: number;
+   thinkingColor: string;
++  thinkingOpen: boolean;
+ }
+ 
+ const toolOptions = liveSlot<ResolvedToolFrameOptions>("tool-frame-options", {
+@@ -139,6 +143,7 @@ const toolOptions = liveSlot<ResolvedToolFrameOptions>("tool-frame-options", {
+   splitDiffMinWidth: 72,
+   diffLines: 20,
+   thinkingColor: "warning",
++  thinkingOpen: false,
+ });
+ 
+ const grouping = () => tidyEnabled.get() && toolOptions.get().groupTools;
+@@ -161,6 +166,7 @@ export function patchToolBoxFrames(options: ToolFrameOptions = {}): void {
+     splitDiffMinWidth = 72,
+     diffLines = 20,
+     thinkingColor = "warning",
++    thinkingOpen = false,
+   } = options;
+   toolOptions.set({
+     icons,
+@@ -171,6 +177,7 @@ export function patchToolBoxFrames(options: ToolFrameOptions = {}): void {
+     splitDiffMinWidth,
+     diffLines,
+     thinkingColor,
++    thinkingOpen,
+   });
+   setJobOptions({ enabled: backgroundJobs, hideNotifications: hideJobNotifications });
+ 
+@@ -189,6 +196,7 @@ export function patchToolBoxFrames(options: ToolFrameOptions = {}): void {
+   setGroupingActive(grouping);
+   setIconsEnabled(() => toolOptions.get().icons);
+   setThinkingColor(() => toolOptions.get().thinkingColor);
++  setThinkingOpen(() => toolOptions.get().thinkingOpen);
+   installGroupBoundaries();
+   installHoverTracking();
+ 
+diff --git a/tool-group-view.ts b/tool-group-view.ts
+index a30d2c8..c40c457 100644
+--- a/tool-group-view.ts
++++ b/tool-group-view.ts
+@@ -603,6 +603,50 @@ export function setThinkingColor(color: () => string): void {
+   thinkingColorFor = color;
+ }
+ 
++/** `tidy.thinkingOpen`: runs start expanded instead of as a preview row. */
++let thinkingOpenFor: () => boolean = () => false;
++
++export function setThinkingOpen(open: () => boolean): void {
++  thinkingOpenFor = open;
++}
++
++/** Runs this component already defaulted, so a fold the user made stays folded. */
++const THOUGHT_DEFAULTED = Symbol.for("pi-toolbox:thought-defaulted");
++/** This carrier already took its default-open state. */
++const CARRIER_DEFAULTED = Symbol.for("pi-toolbox:carrier-defaulted");
++
++/**
++ * `thinkingOpen`: each run opens the first time it is seen, through the same
++ * `thinkingVisibilityOverrides` switch a click flips, so a later click folds it
++ * and it stays folded. Runs before the render, because pi builds the run's
++ * child (label or markdown) from that map in `updateContent`: a run opened
++ * after pi built it would draw its label inside the box.
++ *
++ * A carrier also needs `THOUGHT_OPEN`, the marker its row click sets. It takes
++ * the state run 0 already has, once: at a turn's start a step draws as a plain
++ * message before its call arrives, and a fold made then has to survive.
++ */
++function defaultThinkingOpen(component: any, carrier: boolean): void {
++  if (!thinkingOpenFor()) return;
++  const overrides = component.thinkingVisibilityOverrides as Map<number, boolean> | undefined;
++  if (!overrides?.set) return;
++  const runs = thinkingRuns(component.lastMessage).length;
++  const done: Set<number> = (component[THOUGHT_DEFAULTED] ??= new Set<number>());
++  let changed = false;
++  for (let i = done.size; i < runs; i++) {
++    done.add(i);
++    if (!overrides.has(i)) {
++      overrides.set(i, false);
++      changed = true;
++    }
++  }
++  if (carrier && runs > 0 && !component[CARRIER_DEFAULTED]) {
++    component[CARRIER_DEFAULTED] = true;
++    component[THOUGHT_OPEN] = overrides.get(0) === false;
++  }
++  if (changed && component.lastMessage) component.updateContent?.(component.lastMessage);
++}
++
+ /**
+  * A live thinking row changes on a tick, not on every frame: pi repaints while
+  * streaming, and a window recomputed per paint slides one cell per token, which
+@@ -818,6 +862,8 @@ function wrapBoundaryRender(proto: { render?: RenderFn } | undefined, view: (com
+ export function installGroupBoundaries(): void {
+   wrapBoundaryRender((AssistantMessageComponent as any)?.prototype, (component, width) => {
+     const role = classifyAssistant(component.lastMessage);
++    const carrier = role === "carrier" || (role !== "boundary" && component.isStreaming === true && currentGroupHasMembers());
++    defaultThinkingOpen(component, carrier);
+     if (role === "boundary") noteBoundary(component);
+     else if (role === "carrier") return renderCarrier(component, width);
+     // A step still streaming its thinking mid-segment is, almost always, a

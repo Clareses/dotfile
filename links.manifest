@@ -63,3 +63,6 @@ mirror   home/pi/agent/extensions/repo-structure         ~/.pi/agent/extensions/
 
 # ---- pi package: ripwire (扩展 + 17 个 skill 打包在一起) ----
 linkdir  home/pi/agent/packages/pi-ripwire ~/.pi/agent/packages/pi-ripwire pi
+
+# ---- pi package: pi-tidy-local (本地构建版；mirror 以保留其 node_modules) ----
+mirror   home/pi/agent/packages/pi-tidy-local ~/.pi/agent/packages/pi-tidy-local pi
