@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Join tmux's soft-wrapped lines in the copy buffer, then put it on the clipboard.
+
+tmux copies screen rows, so every soft wrap becomes a newline in the buffer.
+A row that filled the pane was wrapped: the next row continues it. This rewrites
+the buffer with those breaks removed, and leaves real line breaks alone.
+
+Usage:  tmux-join-copy [pane_width]
+
+Wired from ~/.config/tmux/tmux.conf as:
+    bind-key -T copy-mode-vi y send-keys -X copy-selection \\; run-shell 'tmux-join-copy #{pane_width}'
+"""
+
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+import unicodedata
+
+ANSI = re.compile(r"\x1b(?:\[[0-9;:?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)?|_[^\x07]*\x07)")
+
+
+def cells(text: str) -> int:
+    """Display width: CJK and Nerd Font glyphs take two cells, so len() lies."""
+    width = 0
+    for ch in text:
+        if unicodedata.combining(ch) or ch in "\u200b\ufe0f":
+            continue
+        width += 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
+    return width
+
+
+def join_wrapped(text: str, width: int) -> str:
+    lines = text.split("\n")
+    while lines and lines[-1] == "":
+        lines.pop()
+    if width <= 0:
+        return "\n".join(lines) + "\n" if lines else ""
+    out: list[str] = []
+    pending = ""
+    for line in lines:
+        pending += line.rstrip()
+        # A row that reached the right edge has no line break of its own: the
+        # next row is the same sentence, wrapped by the terminal. Measure the
+        # raw row, not the stripped one: tmux pads rows with spaces, and a CJK
+        # row can end mid-cell, so the padded width is the only reliable signal.
+        # tmux trims trailing blanks in the buffer, and a CJK row can leave the
+        # last cell unused, so a wrapped row measures width-1 — not width.
+        if cells(line.rstrip()) >= width - 1:
+            continue
+        out.append(pending)
+        pending = ""
+    if pending:
+        out.append(pending)
+    return "\n".join(out) + "\n" if out else ""
+
+
+def clipboard(text: str) -> str:
+    for cmd in (["wl-copy"], ["xclip", "-selection", "clipboard"], ["pbcopy"], ["clip.exe"]):
+        try:
+            subprocess.run(cmd, input=text, text=True, check=True)
+            return cmd[0]
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            continue
+    return "tmux buffer only"
+
+
+def main() -> None:
+    width = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 0
+    raw = subprocess.run(["tmux", "save-buffer", "-"], capture_output=True, text=True)
+    if raw.returncode != 0:
+        sys.exit("tmux-join-copy: no tmux buffer to read")
+    text = ANSI.sub("", raw.stdout)
+    joined = join_wrapped(text, width)
+    # Keep the tmux buffer in step so prefix+] / paste-buffer behave.
+    subprocess.run(["tmux", "set-buffer", "-w", joined], check=False)
+    where = clipboard(joined)
+    lines_before = len([ln for ln in text.split("\n") if ln.strip()])
+    lines_after = len([ln for ln in joined.split("\n") if ln.strip()])
+    subprocess.run(
+        ["tmux", "display-message", f"joined {lines_before} → {lines_after} rows · {where}"],
+        check=False,
+    )
+
+
+if __name__ == "__main__":
+    main()

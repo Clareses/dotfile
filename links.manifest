@@ -22,6 +22,7 @@ linkdir  config/swaync               ~/.config/swaync               swaync
 
 # ---- terminal ----
 linkdir  config/tmux                 ~/.config/tmux                 tmux
+linkfile config/tmux/tmux-join-copy  ~/.local/bin/tmux-join-copy    tmux
 linkfile config/fish/config.fish     ~/.config/fish/config.fish     fish
 linkdir  config/fish/conf.d          ~/.config/fish/conf.d          fish
 linkdir  config/fish/functions       ~/.config/fish/functions       fish
