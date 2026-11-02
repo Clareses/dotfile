@@ -27,3 +27,8 @@ config/waybar/colors.css
 
 # ---- 安装脚本自己的备份 ----
 _backup/
+
+# ---- 备份文件（*.bak / *.bak.<时间戳> / *.bak-<描述>）----
+*.bak
+*.bak.*
+*.bak-*
