@@ -2,5 +2,6 @@
   "status": {
     "enabled": true
   },
-  "maxConcurrent": 4
+  "maxConcurrent": 4,
+  "placement": "auto"
 }

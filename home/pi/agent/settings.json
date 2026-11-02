@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "1.0.2",
+  "lastChangelogVersion": "1.4.0",
   "theme": "ayu-mirage",
   "defaultProvider": "opencode-go",
   "defaultModel": "deepseek-v4.1-flash",
@@ -22,7 +22,10 @@
         "-skills/ripwire-change-check/SKILL.md"
       ]
     },
-    "npm:pi-input-history"
+    "npm:pi-input-history",
+    "npm:pi-fff",
+    "npm:@dietrichgebert/ponytail",
+    "packages/pi-tidy-local"
   ],
   "extensions": [
     "+extensions/browser-zen/index.ts",
@@ -40,14 +43,30 @@
     "yun/gpt-5.6-sol": "high",
     "yun/gpt-5.6-terra": "high",
     "yun/gpt-6-astra": "high",
-    "yun/gpt-6-sol": "high"
+    "yun/gpt-6-sol": "high",
+    "yun/gpt-6.1-sol": "high"
   },
-  "hideThinkingBlock": false,
+  "hideThinkingBlock": true,
   "treeFilterMode": "no-tools",
   "doubleEscapeAction": "none",
   "tuiMode": "regular",
-  "outputPad": 1,
+  "outputPad": 0,
   "terminal": {
     "showTerminalProgress": false
-  }
+  },
+  "tidy": {
+    "userMessageStyle": "rail",
+    "userMessageAlign": "left",
+    "userMessagePaddingY": 1,
+    "userMessageColors": {
+      "rail": "accent",
+      "rule": "borderMuted"
+    },
+    "messageBorderColors": {
+      "user": "toolTitle"
+    },
+    "icons": true,
+    "groupOpen": true
+  },
+  "editorPaddingX": 1
 }

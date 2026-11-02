@@ -19,6 +19,8 @@ import {
   muxSetupHint,
   createSurface,
   placeSubagentSurface,
+  parsePlacement,
+  type SubagentPlacement,
   sendCommand,
   sendLongCommand,
   pollForExit,
@@ -107,6 +109,23 @@ const SubagentParams = Type.Object({
     }),
   ),
   model: Type.Optional(Type.String({ description: "Model override (overrides agent default)" })),
+  placement: Type.Optional(
+    Type.Union(
+      [
+        Type.Literal("auto"),
+        Type.Literal("parent"),
+        Type.Literal("dedicated"),
+        Type.Literal("window"),
+      ],
+      {
+        description:
+          "Where to open the subagent's pane. 'auto' (default) = right half of the parent window, " +
+          "overflowing to the shared 'subagents' window; 'parent' = always the parent window; " +
+          "'dedicated' = always the shared 'subagents' window; 'window' = its own new tmux window " +
+          "named after the subagent. Overrides PI_SUBAGENT_PLACEMENT and config.json placement.",
+      },
+    ),
+  ),
   cwd: Type.Optional(
     Type.String({
       description:
@@ -627,6 +646,12 @@ interface RunningSubagent {
    * subagent's pane (e.g. planner).
    */
   interactive: boolean;
+  /**
+   * Last interactive turn result already delivered to the parent. Interactive
+   * (auto-exit: false) agents never exit, so their results are delivered on each
+   * active→waiting transition and deduped against this string.
+   */
+  deliveredResultText?: string;
 }
 
 /** All currently running subagents, keyed by id. */
@@ -1053,14 +1078,68 @@ function handleSubagentSteer(
       type: "text" as const,
       text:
         `Message delivered to running subagent "${running.name}". It picks this up at its next ` +
-        `turn boundary. If it exits, its result still arrives as a steer message.`,
+        `turn boundary. If it exits, its result still arrives as a steer message; interactive ` +
+        `subagents (no auto-exit) deliver each finished turn as one.`,
     }],
     details: { id: running.id, name: running.name, status: "steered" },
   };
 }
 
+/**
+ * Interactive subagents (auto-exit: false) never exit, so `pollForExit` never
+ * resolves and the exit-driven delivery in watchSubagent() can never hand their
+ * turn results back. Deliver the last assistant message as a steer message
+ * whenever the agent falls from a working state into "waiting".
+ *
+ * Deduped by text: a parked pane stays in "waiting" tick after tick, but the
+ * last assistant message is unchanged, so nothing is re-announced.
+ */
+function deliverInteractiveTurnResult(
+  running: RunningSubagent,
+  prevKind: string,
+  nextKind: string,
+  pi: ExtensionAPI,
+): void {
+  if (!running.interactive) return;
+  // Only on the transition into waiting — not again while it sits there.
+  if (nextKind !== "waiting" || prevKind === "waiting") return;
+  if (!running.sessionFile || !existsSync(running.sessionFile)) return;
+
+  let text: string | null = null;
+  try {
+    text = findLastAssistantMessage(getNewEntries(running.sessionFile, 0));
+  } catch {
+    return; // half-written session file — try again on the next transition
+  }
+  if (!text || !text.trim()) return;
+  if (text === running.deliveredResultText) return;
+  running.deliveredResultText = text;
+
+  pi.sendMessage(
+    {
+      customType: "subagent_result",
+      content:
+        `Sub-agent "${running.name}" finished a turn. It is an interactive subagent, so it is ` +
+        `still running and will stay open.\n\n${text}\n\n` +
+        `Reply with subagent_message({ name: "${running.name}", message: "…" }) to continue — ` +
+        `the same name works whether it is still running or has since exited.`,
+      display: true,
+      details: {
+        name: running.name,
+        task: running.task,
+        agent: running.agent,
+        interactive: true,
+        sessionFile: running.sessionFile,
+      },
+    },
+    { triggerTurn: true, deliverAs: "steer" },
+  );
+}
+
 function startStatusRefresh(pi: ExtensionAPI) {
-  if (!statusConfig.enabled || statusInterval) return;
+  // The status interval also drives interactive-result delivery, so it must run
+  // even when status pings are disabled — only the transition lines are gated.
+  if (statusInterval) return;
 
   statusInterval = setInterval(() => {
     if (runningSubagents.size === 0) {
@@ -1078,6 +1157,7 @@ function startStatusRefresh(pi: ExtensionAPI) {
 
     for (const running of runningSubagents.values()) {
       observeRunningSubagent(running, now);
+      const prevKind = running.statusState.currentKind;
       const { nextState, snapshot, transition } = advanceStatusState(running.statusState, now);
       if (nextState.currentKind !== running.statusState.currentKind) {
         shouldRefreshWidget = true;
@@ -1088,9 +1168,14 @@ function startStatusRefresh(pi: ExtensionAPI) {
       // wake the parent session on stalled/recovered transitions — the user is
       // working in the subagent's pane, and a steer message here would burn an
       // orchestrator turn on a no-op "still waiting" ping. Widget still updates.
-      if (transition && !running.interactive) {
+      if (transition && !running.interactive && statusConfig.enabled) {
         transitionLines.push(formatTransitionLine(running.name, snapshot, transition));
       }
+
+      // Interactive agents never exit, so the exit-driven delivery in
+      // watchSubagent() can never fire for them — hand the finished turn over
+      // when the pane parks in "waiting" instead.
+      deliverInteractiveTurnResult(running, prevKind, nextState.currentKind, pi);
     }
 
     if (shouldRefreshWidget) updateWidget();
@@ -1148,6 +1233,7 @@ export const __test__ = {
   formatContextUsage,
   contextWindowFor,
   formatUsageSegments,
+  deliverInteractiveTurnResult,
   widgetIcon,
 };
 
@@ -1202,6 +1288,39 @@ function getMaxConcurrentSubagents(): number {
   const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
   if (Number.isFinite(parsed) && parsed >= 1) return parsed;
   return readConfiguredMaxConcurrent() ?? 4;
+}
+
+/** Optional `placement` in the extension's config.json (string or `{ mode }`). */
+function readConfiguredPlacement(): SubagentPlacement | undefined {
+  try {
+    const parsed = JSON.parse(readFileSync(SUBAGENT_CONFIG_PATH, "utf8")) as {
+      placement?: unknown;
+    };
+    const raw = parsed?.placement;
+    const value =
+      typeof raw === "object" && raw !== null
+        ? (raw as { mode?: unknown }).mode
+        : raw;
+    return parsePlacement(value);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Where a new subagent pane goes, resolved fresh on every spawn/resume:
+ *   1. the `placement` tool parameter
+ *   2. `PI_SUBAGENT_PLACEMENT` environment variable
+ *   3. root-level `placement` in the extension's config.json (`"window"` or
+ *      `{ "mode": "window" }`)
+ *   4. default `auto` — keep in the parent window, overflow to the dedicated one
+ */
+function resolvePlacement(explicit?: unknown): SubagentPlacement {
+  const fromParam = parsePlacement(explicit);
+  if (fromParam) return fromParam;
+  const fromEnv = parsePlacement(process.env.PI_SUBAGENT_PLACEMENT?.trim());
+  if (fromEnv) return fromEnv;
+  return readConfiguredPlacement() ?? "auto";
 }
 /** Spawns admitted but not yet registered in `runningSubagents` (parallel calls). */
 let pendingSpawns = 0;
@@ -1335,7 +1454,11 @@ async function launchSubagent(
   if (options?.surface) {
     surface = options.surface;
   } else {
-    surface = placeSubagentSurface(params.name, currentSubagentSurfaces());
+    surface = placeSubagentSurface(
+      params.name,
+      currentSubagentSurfaces(),
+      resolvePlacement(params.placement),
+    );
     reservedSurfaces.add(surface);
   }
   if (!surfacePreCreated) {
@@ -1835,7 +1958,8 @@ export default function subagentsExtension(pi: ExtensionAPI) {
         "When the sub-agent finishes, the harness AUTOMATICALLY delivers its result as a steer message that wakes you up and starts a new turn — you do not need to do anything to receive it. " +
         "DO NOT write polling loops, sleep/wait commands, tail/watch scripts, or repeatedly read session/log files to detect completion. DO NOT call subagents_list or any other tool to 'check' status. All of that is wasted work — the harness handles delivery for you. " +
         "DO NOT fabricate, assume, or summarize results after calling this tool. " +
-        "After spawning, either end your turn immediately, or work on other independent tasks (including spawning more subagents in parallel). The harness will wake you with the result when it is ready.",
+        "After spawning, either end your turn immediately, or work on other independent tasks (including spawning more subagents in parallel). The harness will wake you with the result when it is ready. " +
+        "The optional `placement` parameter controls where the pane opens: auto (default), parent, dedicated, or window (its own new tmux window named after the subagent).",
       promptSnippet:
         "Spawn a sub-agent in a dedicated terminal multiplexer pane. " +
         "This is a fire-and-forget async tool: the call returns immediately with only an acknowledgement. " +
@@ -2348,7 +2472,12 @@ export default function subagentsExtension(pi: ExtensionAPI) {
           };
         }
 
-        const surface = placeSubagentSurface(name, currentSubagentSurfaces());
+        const surface = placeSubagentSurface(
+          name,
+          currentSubagentSurfaces(),
+          // Resumes have no params of their own — config/env decide, default auto.
+          resolvePlacement(),
+        );
         reservedSurfaces.add(surface);
         await new Promise<void>((resolve) => setTimeout(resolve, getShellReadyDelayMs()));
 

@@ -33,11 +33,42 @@ export PI_SUBAGENT_MAX_CONCURRENT=8            # default: 4 (env var wins)
 
 The same value can be set persistently in the extension's `config.json` (root-level `maxConcurrent`). The env var takes precedence; panes beyond the main-window layout spill into the tiled `subagents` window automatically.
 
+### Pane placement
+
+The default policy (`auto`) is: fill the right half of the parent pi window (1–4 panes, stacked / 2×2), overflow into the shared `subagents` window. Override it — globally or per spawn — with `auto`, `parent`, `dedicated` or `window`:
+
+```bash
+export PI_SUBAGENT_PLACEMENT=window   # every subagent gets its own tmux window
+```
+
+```json
+{ "placement": "window" }
+```
+
+```json
+{ "placement": { "mode": "dedicated" } }
+```
+
+Per spawn (highest precedence):
+
+```
+subagent({ agent: "persist", name: "sol", task: "…", placement: "window" })
+```
+
+| `placement` | Behaviour |
+| --- | --- |
+| `auto` (default) | parent window right half, overflow to `subagents` |
+| `parent` | always in the parent window (resizes the user's panes if present) |
+| `dedicated` | always in the shared `subagents` window |
+| `window` | its own new window, named after the subagent (`dsv4pro`, `sol`, …) |
+
+Precedence: tool parameter → `PI_SUBAGENT_PLACEMENT` → `config.json` `placement` → `auto`.
+
 ## Tools
 
 | Tool | Description |
 | --- | --- |
-| `subagent` | Spawn a sub-agent in a dedicated tmux pane (async) |
+| `subagent` | Spawn a sub-agent in a dedicated tmux pane (async); `placement` picks the window |
 | `subagent_message` | Message a sub-agent by name — steers it if running, resumes its session if finished |
 | `subagents_list` | List available agent definitions |
 | `ask_question` | *(sub-agent sessions only)* Ask the orchestrator a question and wait for the reply |
@@ -145,6 +176,12 @@ Notes:
 ### interactive
 
 Controls whether `stalled`/`recovered` status transitions send a steer message to the parent session. Defaults to the inverse of `auto-exit`: autonomous agents get stall pings; user-driven agents stay quiet (the user is already working in that pane — the widget still updates). Set explicitly to override.
+
+#### Turn results from interactive agents
+
+An interactive agent (`auto-exit: false`) never exits, so the exit-driven result delivery can never fire for it. To keep it usable as a long-lived collaborator, each **finished turn** is delivered to the parent as a `subagent_result` steer message when the agent falls back into `waiting` (one delivery per turn, deduped by the last assistant message text — a parked pane is never re-announced, and a `waiting → stalled → waiting` wobble does not duplicate anything). Reply with `subagent_message` to continue; the pane keeps its context.
+
+This delivery is driven by the status interval, so it works even with `status.enabled: false` (only the stall/recovery pings are gated by that flag).
 
 ## Tool access control
 

@@ -92,6 +92,37 @@ const MAX_MAIN_SUBAGENTS_CLEAN = 4;
 const MAX_MAIN_SUBAGENTS_CROWDED = 2;
 const DEDICATED_WINDOW_NAME = "subagents";
 
+/**
+ * Where a new subagent pane goes.
+ *   auto      — current/default policy: right half of the parent window while
+ *               it is clean, otherwise parent window then the dedicated window
+ *   parent    — always in the parent window (right column), even alongside the
+ *               user's own panes; overflows to the dedicated window past 4
+ *   dedicated — always in the dedicated `subagents` window (tiled)
+ *   window    — its own new tmux window, named after the subagent
+ */
+export type SubagentPlacement = "auto" | "parent" | "dedicated" | "window";
+
+const PLACEMENT_ALIASES: Record<string, SubagentPlacement> = {
+  auto: "auto",
+  default: "auto",
+  parent: "parent",
+  split: "parent",
+  "parent-window": "parent",
+  dedicated: "dedicated",
+  "dedicated-window": "dedicated",
+  subagents: "dedicated",
+  window: "window",
+  "new-window": "window",
+  "own-window": "window",
+};
+
+/** Normalize a placement string from config/env/params; undefined when unknown. */
+export function parsePlacement(raw: unknown): SubagentPlacement | undefined {
+  if (typeof raw !== "string") return undefined;
+  return PLACEMENT_ALIASES[raw.trim().toLowerCase()];
+}
+
 /** Expose the layout policy so callers (tool descriptions) can stay in sync. */
 export function subagentLayoutConfig(): {
   maxClean: number;
@@ -140,6 +171,57 @@ function listWindowPanes(windowId: string): string[] {
   } catch {
     return [];
   }
+}
+
+function sanitizeWindowName(name: string): string {
+  const cleaned = name
+    .trim()
+    .replace(/[\s:.]+/g, "-")
+    .replace(/[^\w@-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 30);
+  return cleaned || "subagent";
+}
+
+/** First free window name in `sessionId` for `base` (`dsv4pro`, `dsv4pro-2`, …). */
+function uniqueWindowName(sessionId: string, base: string): string {
+  const taken = new Set<string>();
+  try {
+    for (const line of tmux(["list-windows", "-t", sessionId, "-F", "#{window_name}"]).split("\n")) {
+      const name = line.trim();
+      if (name) taken.add(name);
+    }
+  } catch {}
+  if (!taken.has(base)) return base;
+  for (let i = 2; i < 100; i++) {
+    const candidate = `${base}-${i}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  return `${base}-${Date.now().toString(36)}`;
+}
+
+/**
+ * Create a brand-new tmux window (named after the subagent) and return its pane
+ * id. The pane id survives later `break-pane`/`join-pane` moves, so the
+ * extension's watcher keeps tracking it. Returns undefined without a session.
+ */
+function placeInOwnWindow(
+  name: string,
+  mainPane: string | undefined,
+): string | undefined {
+  const sessionId = mainPane ? sessionOf(mainPane) : undefined;
+  if (!sessionId) return undefined;
+  const windowName = uniqueWindowName(sessionId, sanitizeWindowName(name));
+  const cwd = mainPane ? paneField(mainPane, "#{pane_current_path}") : undefined;
+  const args = ["new-window", "-d", "-t", `${sessionId}:`];
+  if (cwd) args.push("-c", cwd);
+  args.push("-n", windowName, "-P", "-F", "#{pane_id}");
+  const pane = tmux(args).trim();
+  if (!pane.startsWith("%")) {
+    throw new Error(`Unexpected tmux new-window output: ${pane}`);
+  }
+  return pane;
 }
 
 function findDedicatedWindow(sessionId: string): string | undefined {
@@ -262,18 +344,41 @@ function applyRightStackLayout(mainPane: string, subPanes: string[]): void {
  *
  * `existingSurfaces` is the current set of live subagent panes (including any
  * reserved for parallel in-flight spawns); dead ids are ignored.
+ *
+ * `placement` overrides the policy above (see SubagentPlacement).
  */
-export function placeSubagentSurface(name: string, existingSurfaces: string[]): string {
+export function placeSubagentSurface(
+  name: string,
+  existingSurfaces: string[],
+  placement: SubagentPlacement = "auto",
+): string {
   requireTmux();
   const mainPane = process.env.TMUX_PANE;
-  const live = existingSurfaces.filter((s) => s && isPaneAlive(s));
   const mainWindow = mainPane ? windowOf(mainPane) : undefined;
+
+  // Each subagent gets its own window; fall back to the default policy when
+  // there is no tmux session to name a window in.
+  if (placement === "window") {
+    const pane = placeInOwnWindow(name, mainPane);
+    if (pane) return pane;
+  }
+
+  // Always the dedicated window — but only when we know the session (and thus
+  // which window to put it in).
+  if (placement === "dedicated" && mainPane && mainWindow) {
+    return placeInDedicatedWindow(name, mainPane);
+  }
+
+  const live = existingSurfaces.filter((s) => s && isPaneAlive(s));
 
   if (mainPane && mainWindow) {
     const allPanes = listWindowPanes(mainWindow);
     const inMain = live.filter((s) => windowOf(s) === mainWindow);
     const foreignPanes = allPanes.filter((p) => p !== mainPane && !inMain.includes(p));
-    const crowded = foreignPanes.length > 0;
+    // `parent` ignores foreign panes: the caller explicitly asked for the
+    // parent window, so stack in the right column (resizing the user's panes is
+    // the accepted consequence) and only overflow past the clean limit.
+    const crowded = placement === "parent" ? false : foreignPanes.length > 0;
     const limit = crowded ? MAX_MAIN_SUBAGENTS_CROWDED : MAX_MAIN_SUBAGENTS_CLEAN;
 
     if (inMain.length < limit) {
