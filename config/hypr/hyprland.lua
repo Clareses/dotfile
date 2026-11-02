@@ -4,6 +4,9 @@ require("./uitls.lua")
 
 hl.env("XCURSOR_THEME", "breeze_cursors")
 hl.env("XCURSOR_SIZE", "28")
+hl.env("GTK_IM_MODULE", "fcitx5")
+hl.env("QT_IM_MODULE", "fcitx5")
+hl.env("XMODIFIERS", "@im=fcitx5")
 -- hl.env("HYPRCURSOR_THEME", "breeze_cursors")
 -- hl.env("HYPRCURSOR_SIZE", "30")
 
