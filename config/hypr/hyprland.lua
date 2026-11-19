@@ -14,7 +14,8 @@ hl.env("XMODIFIERS", "@im=fcitx5")
 
 hl.on("hyprland.start", function()
     hl.exec_cmd("fcitx5")
-    hl.exec_cmd("hyprsunset -t 8000")
+    -- hyprsunset 会下发全局 CTM 矩阵，和 HDR/CM 打架（画面发灰、发白），开 HDR 时别用
+    -- hl.exec_cmd("hyprsunset -t 8000")
     hl.exec_cmd("awww-daemon")
     -- quickshell is a Qt6 app: force the fcitx5 Qt (DBus) plugin for it.
     -- Without QT_IM_MODULE, Qt6's built-in Wayland input context registers NO
@@ -31,9 +32,14 @@ end)
 
 ----------------------- Configs --------------------------
 
+local render = {
+    cm_enabled = true,
+    cm_auto_hdr = 0,
+}
+
 
 local misc = {
-    key_press_enables_dpms = false,
+    key_press_enables_dpms = true,
     mouse_move_enables_dpms = true,
 }
 
@@ -72,8 +78,8 @@ local decoration = {
     },
     blur = {
         enabled = true,
-        size = 6,
-        passes = 4,
+        size = 3,
+        passes = 3,
         new_optimizations = true,
         ignore_opacity = true,
     },
@@ -84,13 +90,14 @@ local xwayland = { force_zero_scaling = true }
 local dwindle = { preserve_split = true }
 local animations = { enabled = true }
 
-hl.curve("myBezier", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.05 } } })
-hl.animation({ leaf = "windows", enabled = true, speed = 7, bezier = "myBezier" })
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 7, bezier = "default", style = "popin 80%" })
-hl.animation({ leaf = "border", enabled = true, speed = 10, bezier = "default" })
+hl.curve("myBezier", { type = "bezier", points = { { 0.05, 1 }, { 0.1, 1.05 } } })
+hl.curve("workspace", { type = "bezier", points = { { 0.05, 1 }, { 0.5, 1.02 } } })
+hl.animation({ leaf = "windows", enabled = true, speed = 8, bezier = "myBezier" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 8, bezier = "default", style = "popin 80%" })
+hl.animation({ leaf = "border", enabled = true, speed = 8, bezier = "default" })
 hl.animation({ leaf = "borderangle", enabled = true, speed = 8, bezier = "default" })
-hl.animation({ leaf = "fade", enabled = true, speed = 7, bezier = "default" })
-hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "default" })
+hl.animation({ leaf = "fade", enabled = true, speed = 8, bezier = "default" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "workspace" })
 
 -- per-layer animation: only the swaync control center slides in from the left;
 -- every other layer keeps the global (fade) animation.
@@ -104,7 +111,8 @@ hl.config({
     dwindle = dwindle,
     misc = misc,
     input = input,
-    decoration = decoration
+    decoration = decoration,
+    render = render
 })
 
 
@@ -135,14 +143,14 @@ bind(mainMod .. "SHIFT + j", win.move({ direction = "d" }))
 
 -- workspace bindings and settings
 for i = 1, 10, 1 do
-    hl.workspace_rule({ workspace = "0" .. tostring(i), monitor = "HDMI-A-1" })
-    hl.workspace_rule({ workspace = "1" .. tostring(i), monitor = "DP-1" })
+    hl.workspace_rule({ workspace = "0" .. tostring(i), monitor = "DP-1" })
+    hl.workspace_rule({ workspace = "1" .. tostring(i), monitor = "HDMI-A-1" })
     local key = i
     if i == 10 then key = 0 end
 
     bind(mainMod .. "+ " .. key, function()
         local wstr = tostring(i)
-        if hl.get_active_monitor().name == "DP-1" then
+        if hl.get_active_monitor().name == "HDMI-A-1" then
             if i == 10 then wstr = "20" else wstr = "1" .. wstr end
         else
             wstr = "0" .. wstr
@@ -152,7 +160,7 @@ for i = 1, 10, 1 do
 
     bind(mainMod .. "+ SHIFT + " .. key, function()
         local wstr = tostring(i)
-        if hl.get_active_monitor().name == "DP-1" then
+        if hl.get_active_monitor().name == "HDMI-A-1" then
             if i == 10 then wstr = "20" else wstr = "1" .. wstr end
         else
             wstr = "0" .. wstr
@@ -160,7 +168,7 @@ for i = 1, 10, 1 do
         hl.dispatch(win.move({ workspace = wstr }))
     end)
 end
-hl.workspace_rule({ workspace = "20", monitor = "DP-1" })
+hl.workspace_rule({ workspace = "20", monitor = "HDMI-A-1" })
 hl.workspace_rule({ workspace = "21", monitor = "eDP-1", persistent = true })
 bind(mainMod .. "+ BACKSPACE", hl.dsp.focus({ workspace = "21" }))
 bind(mainMod .. "+ SHIFT + BACKSPACE", win.move({ workspace = "21" }))
@@ -168,7 +176,7 @@ bind(mainMod .. "mouse:272", win.drag())
 bind(mainMod .. "mouse:273", win.resize())
 
 -- keybinding for applications
-bind(mainMod .. "return", exec("/bin/kitty fish"))
+bind(mainMod .. "return", exec("/bin/kitty --start-as=minimized fish"))
 bind(mainMod .. "d", exec("env -u XMODIFIERS -u GTK_IM_MODULE -u QT_IM_MODULE rofi -show drun"))
 bind(mainMod .. "w", exec("env -u XMODIFIERS -u GTK_IM_MODULE -u QT_IM_MODULE rofi -show window"))
 bind(mainMod .. "e", exec("env -u XMODIFIERS -u GTK_IM_MODULE -u QT_IM_MODULE rofi -show run"))
@@ -238,8 +246,8 @@ hl.window_rule({
     no_shadow = true,
     pin = true,
     float = true,
-    size = { 2560, 0 },
-    move = { 0, 68 },
+    size = { 0, 10 },
+    move = { 1435, 68 },
     no_focus = true,
 })
 
@@ -253,10 +261,10 @@ hl.window_rule({
     no_shadow = true,
     pin = true,
     float = true,
-    size = { 2560, 0 },
-    move = { -600, 20 },
+    size = { 0, -35 },
+    move = { 800, 0 },
     no_focus = true,
-    max_size = { 0, 0 },
+    max_size = { 0, -50 },
 })
 
 hl.window_rule({
@@ -287,14 +295,20 @@ hl.monitor({
     scale = "1.6",
 })
 hl.monitor({
-    output = "HDMI-A-1",
-    mode = "2560x1440@144.00",
+    output = "DP-1",
+    mode = "3840x2160@144",
+    scale = "1.33",
     position = "1600x0",
-    scale = "1.0",
+    -- cm = "hdr",
+    -- bitdepth = 10,
+    -- sdrbrightness = 1.3, -- SDR 白点倍数：越大 SDR 越亮（没那么灰），代价是对比度下降、易过曝
+    -- sdr_min_luminance = 0,
+    -- sdrsaturation = 1.1
+
 })
 hl.monitor({
-    output = "DP-1",
-    mode = "2560x1440@75",
-    scale = "1.07",
-    position = "4160x0"
+    output = "HDMI-A-1",
+    mode = "2560x1440@144.00",
+    position = "auto",
+    scale = "1.0",
 })

@@ -17,7 +17,8 @@ PanelWindow {
     readonly property HyprlandMonitor hyprMonitor: Hyprland.monitorFor(root.screen)
 
     // --- WAYLAND CONFIGURATION ---
-    WlrLayershell.layer: WlrLayer.Top
+    // Bottom so ordinary toplevels (e.g. SPlayer's Dynamic Island) can draw over it.
+    WlrLayershell.layer: WlrLayer.Bottom
     // Keyboard focus is owned by the HyprlandFocusGrab below (the same primitive
     // the Calendar/Power popups use), not by the layer-shell focus mode. A
     // WlrKeyboardFocus.Exclusive grab held the keyboard until Escape and left

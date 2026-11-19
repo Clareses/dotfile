@@ -503,9 +503,11 @@ function groupHeaderLine(
 /** The summary line each anchor drew last, keyed by everything that went into it. */
 const headerLines = new WeakMap<object, { key: string; line: string }>();
 
-/** A quarter-turn frame that follows the wall clock, so any repaint advances it. */
-function thinkingSpinner(now: number): string {
-  return spinnerFrame({ id: "", name: "", status: "running", startTime: now }, now);
+/** A still "still arriving" glyph. A time-varying frame here rewrites a row
+ * above the viewport once a second, and main-screen mode answers every such
+ * change with a full-screen clear + replay (firstChanged < viewportTop). */
+function thinkingSpinner(_now: number): string {
+  return "◐";
 }
 
 const revealScheduled = new WeakSet<object>();
@@ -1004,7 +1006,11 @@ function restyleThinking(component: any, lines: string[] | undefined, width: num
   if (theme && runs.length > 0) noteThinking(component, runs);
   const thought = theme && runs.length > 0 ? thinkingState(component) : undefined;
   if (thought?.settlesIn !== undefined) scheduleSettle(component, thought.settlesIn);
-  const budget = Math.max(1, width - THOUGHT_LABEL_CELLS - 1);
+  const budget = Math.max(1, width - THOUGHT_LABEL_CELLS - 1 - GUTTER_CELLS);
+  const gutter = theme ? groupGutter(theme, gutterColorFor()) : "";
+  const thinkingIndent = `${gutter}${BODY_PAD}`;
+  const thinkingWidth = Math.max(1, width - GUTTER_CELLS - BODY_PAD.length);
+  const canIndent = width > GUTTER_CELLS + BODY_PAD.length + 4;
   const liveTexts = undefined as string[] | undefined;
   const spinner = thought?.live ? thinkingSpinner(Date.now()) : undefined;
   const view = new MessageView();
@@ -1032,13 +1038,18 @@ function restyleThinking(component: any, lines: string[] | undefined, width: num
       if (drewLabel(kid)) {
         const text = liveTexts?.[index] ?? settledRowText(runs, budget)[index] ?? "";
         const label = formatThoughtLine(text, theme, { icons, thinkingColor: color, spinner });
-        rows = [label];
-        // The zone markers sit in pi's own render of the run, which the label
-        // just replaced: carry them over so the prompt markers stay intact.
-        for (const marker of taken.join("").match(ZONE_MARKERS) ?? []) {
-          if (marker === "\x1b]133;A\x07") rows[0] = marker + rows[0];
-          else rows[rows.length - 1] += marker;
-        }
+        rows = [gutter + label];
+      }
+      else if (canIndent) {
+        // Expanded: keep pi's markdown to the right of the group rail instead of
+        // at the left edge. Re-render at the narrower width so wrapping fits.
+        rows = (kid.render(thinkingWidth) as string[]).map((line) => `${thinkingIndent}${line}`);
+      }
+      // The zone markers sit in pi's own render of the run: carry them over so
+      // the prompt markers stay intact.
+      for (const marker of taken.join("").match(ZONE_MARKERS) ?? []) {
+        if (marker === "\x1b]133;A\x07") rows[0] = marker + rows[0];
+        else rows[rows.length - 1] += marker;
       }
     }
     // Preserve pi's OSC markers and its own mouse target: MouseRegion forwards

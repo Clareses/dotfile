@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "1.4.0",
+  "lastChangelogVersion": "1.5.0",
   "theme": "ayu-mirage",
   "defaultProvider": "opencode-go",
   "defaultModel": "deepseek-v4.1-flash",
@@ -68,5 +68,8 @@
     "icons": true,
     "groupOpen": true
   },
-  "editorPaddingX": 1
+  "editorPaddingX": 1,
+  "extensionChangelogVersions": {
+    "{\"source\":\"https://github.com/nicobailon/pi-web-access.git\",\"scope\":\"user\"}": "0.45.0"
+  }
 }
