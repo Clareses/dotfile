@@ -34,6 +34,9 @@ dotfile/
 `hypr`、`waybar`、`i3`、`quickshell`、`fcitx5`、`mako`、`swaync`、
 `tmux`、`fish`、`nvim`、`pi`，外加 `all`。
 
+> ponytail（pi 的扩展）默认模式在 `config/ponytail/config.json`（→ `~/.config/ponytail/config.json`），
+> 归 `pi` target。该文件缺失时 ponytail 会回落到 `full`，所以换机器一定要带上它。
+
 备份目录：`~/.local/state/dotfile/backups/<时间戳>/`（可用 `DOTFILE_BACKUP_ROOT` 覆盖）。
 
 ## manifest 三种模式
